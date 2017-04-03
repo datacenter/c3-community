@@ -1,0 +1,1 @@
+These integrations vary in purpose and how CloudCenter can consume them but they provide value for the clouds, applications and infrastructure that CloudCenter interacts with during the deployment, management and lifecycle of virtual infrastructure and applications.  New "Action Library" features of the C3 v4.8 release can also be found in this category.

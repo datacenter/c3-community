@@ -1,0 +1,1 @@
+These services are the building blocks that make up the reusable components of an Application Profile within CloudCenter.  Many services ship with CloudCenter with each release but others are provided here as enhancements, newer versions or simply services that aren't currently included
