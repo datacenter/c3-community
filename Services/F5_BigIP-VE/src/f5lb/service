@@ -1,0 +1,91 @@
+#!/bin/bash
+#F5 External Service Script
+
+#For external-service
+. /utils.sh
+
+cmd=$1
+memberIPs=""
+
+# RUN EVERYTHING AS ROOT
+if [ "$(id -u)" != "0" ]; then
+    exec sudo "$0" "$@"
+fi
+
+
+function setup_prereqs() {
+  yum install -y python-pip wget
+  pip install requests --upgrade
+  pip install jinja2
+}
+
+function getMembers() {
+  for tier in $(echo $CliqrDependencies | tr "," "\n" )
+  do
+    members=CliqrTier_${tier}_IP
+    for ip in $(echo ${!members} | tr "=" "\n" | tr "," "\n")
+    do
+      memberIPs=$memberIPs"[\"$ip\"],"
+    done
+    memberIPs=`echo $memberIPs |sed s'/.$//'`
+  done
+}
+
+function createBIGIPParams() {
+
+ sed -i "s/%vipName%/CloudCenter_$vipName/g" params.json
+ sed -i "s/%vip%/$vip/g" params.json
+ sed -i "s/%vipPort%/$vipPort/g" params.json
+ sed -i "s/%lbMethod%/$lbMethod/g" params.json
+ sed -i "s/%defaultPersistence%/$defaultPersistence/g" params.json
+ sed -i "s/%fallbackPersistence%/$fallbackPersistence/g" params.json
+ sed -i "s/%iRules%/$iRules/g" params.json
+ sed -i "s/%listenPort%/$listenPort/g" params.json
+ sed -i "s?%poolMonitor%?$poolMonitor?" params.json
+ sed -i "s/%poolMembers%/$memberIPs/g" params.json
+}
+
+function executionStatus() {
+ FILE="FAILURE"
+ if [ -f $FILE ];
+ then
+    status=`cat $FILE`
+    print_log "BIG IP Configuration Failed"
+    print_log "$status"
+    exit 127   
+  else
+    FILE="SUCCESS"
+    status="BIG IP Successfully Configured"
+    print_log "$status"
+ fi
+}
+
+print_log "Installing pre requisites.."
+setup_prereqs
+print_log "Retrieving Members.."
+getMembers
+print_log "Setting the params.."
+createBIGIPParams
+
+
+case $cmd in
+	start)
+		print_log "Executing Service.."
+		print_log "VIP - $vip"
+		python bigip_rest.py -u $bigIPuser -p $bigIPPassword -c post -t $bigIPAddress -template cliqr.template -var params.json 
+		executionStatus
+		;;
+	stop)
+		print_log "Deleting Service.."
+		python bigip_rest.py -u $bigIPuser -p $bigIPPassword -c delete -t $bigIPAddress -template cliqr.template -var params.json 
+		;;
+	update)
+		print_log "Updating Service.."
+		python bigip_rest.py -u $bigIPuser -p $bigIPPassword -c put -t $bigIPAddress -template cliqr.template -var params.json 
+		;;
+	*)
+		serviceStatus="No Valid Script Argument"
+		exit 127
+		;;
+esac
+

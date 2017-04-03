@@ -1,0 +1,12 @@
+{
+        "name": "%vipName%",
+        "vip": "%vip%",
+        "vip_port": "%vipPort%",
+        "lb_method": "%lbMethod%",
+        "default_persistence": "%defaultPersistence%",
+        "fallback_persistence": "%fallbackPersistence%",
+        "irules": "%iRules%",
+	"member_default_port": "%listenPort%",
+	"pool_monitor": "%poolMonitor%",
+	"pool_members": [ %poolMembers% ] 
+}
