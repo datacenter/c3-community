@@ -1,0 +1,602 @@
+#!/bin/bash
+
+# RDS MySql service script
+
+# exec > >(tee -a /usr/local/osmosix/logs/service.log) 2>&1
+
+. /utils.sh
+
+cmd=$1
+SVCNAME="rdsmysql"
+export INSTALL_DIR="/usr/local/aws"
+
+if [ -z "$vpcId" ];
+then
+	vpcId="$Cloud_Setting_vpcId";
+fi
+
+if [ -z "$cliqrRdsEngine" ];
+then
+	RDS_ENGINE="MySQL"
+else
+	RDS_ENGINE=$cliqrRdsEngine
+fi
+
+if [ -z "$cliqrRdsEngineVersion" ];
+then
+	RDS_VERSION="5.6.23"
+	export version="5.6.23"
+else
+	RDS_VERSION=$cliqrRdsEngineVersion
+fi
+
+if [ -z "$cliqrRDSLicenseModel" ];
+then
+	RDS_LICENSE_MODEL="general-public-license"
+else
+	RDS_LICENSE_MODEL=$cliqrRDSLicenseModel
+fi
+
+if [ -z "$cidr" ];
+then
+	export cidr="0.0.0.0/0";
+fi
+
+if [ -z "$region" ];
+then
+	export region="us-east-1";
+fi
+
+if [ -z "$cliqrIsPublicAccessible" ];
+then
+	export PUB_ACCESS="--publicly-accessible"
+else
+	if [ $cliqrIsPublicAccessible="true" ];
+	then
+		export PUB_ACCESS="--publicly-accessible"
+	else
+		export PUB_ACCESS=""
+	fi
+fi
+
+if [ -z "$cliqrStorageType" ];
+then
+	export STORAGE_TYPE="standard"
+else
+	export STORAGE_TYPE=$cliqrStorageType
+fi
+
+if [ -z "$cliqrDBDataStorageSize" ];
+then
+	export RDS_VOLUME_SIZE="100"
+else
+	export RDS_VOLUME_SIZE=$cliqrDBDataStorageSize
+fi
+
+export MULTI_AZ="true"
+
+
+if [ -z "$port" ];
+then
+    port="3306"
+fi
+
+rdsMySQLSG="rdsmysql-sg-"`echo "$port" | tr -d ' '`
+rdsMySQLSGParam="$rdsMySQLSG"
+
+if [ -z $sgId ];
+then
+	sgId=""
+fi
+
+subnetGroup="";
+defaultVpcId=""
+
+
+installRDSCli() {
+
+    print_log "Installing RDS CLI tools..."
+
+	if [ -d $INSTALL_DIR ]; then
+			echo  "RDSCli already installed skipping the RDSCli Install";
+			export PATH=$PATH:$INSTALL_DIR/bin
+			echo "PATH value is = $PATH"
+	else
+			mkdir -p $INSTALL_DIR
+			cd $INSTALL_DIR
+			wget https://s3.amazonaws.com/aws-cli/awscli-bundle.zip
+			unzip awscli-bundle.zip
+			./awscli-bundle/install -i $INSTALL_DIR
+			rm -f awscli-bundle.zip
+			export PATH=$PATH:$INSTALL_DIR/bin
+			echo "PATH value is = $PATH"
+	fi
+
+	yum -y install mysql
+	exitCode=$?
+	if [ $exitCode -ne 0 ]; then
+		print_error "Failed to install mysql client"
+		exit $exitCode
+	fi
+
+}
+
+configureRDSCli(){
+    print_log "Configuring RDS CLI..."
+	export JAVA_HOME="/usr/lib/jvm/jre"
+	export EC2_REGION="$region"
+	export PATH=$PATH:$INSTALL_DIR/bin
+
+	if [ ! -z "$CliqrCloud_EC2ARN" ];
+	then
+		credresult=`aws sts assume-role --role-arn "$CliqrCloud_EC2ARN" --role-session-name "MyRoleSessionName"`
+		if [ ! -n $credresult ];
+		then
+			print_error "Error in generating credentials using the role : $CliqrCloud_EC2ARN";
+			exit 127
+		fi
+		export AWS_SECRET_ACCESS_KEY=`echo $credresult | awk -F SecretAccessKey '{printf $2}' | awk -F \" '{printf $3}'`
+		export AWS_ACCESS_KEY_ID=`echo $credresult | awk -F AccessKeyId '{printf $2}' | awk -F \" '{printf $3}'`
+		export AWS_SECURITY_TOKEN=`echo $credresult | awk -F SessionToken '{printf $2}' | awk -F \" '{printf $3}'`
+	elif [ -z $AccessKey ] || [ -z $AccessSecretKey ];
+	then
+		print_error "Insufficient permissions to access the Cloud Account, contact your Admin for the Cloud Account Accessibility";
+		exit 127
+	else
+		export AWS_ACCESS_KEY_ID="$AccessKey"
+		export AWS_SECRET_ACCESS_KEY="$AccessSecretKey"
+
+	fi
+
+	if [ -z $AWS_ACCESS_KEY_ID ];then
+			print_error "Cloud Account Access Key not found or couldn't generate with IAM role"
+			exit 127
+	fi
+
+	if [ -z $AWS_SECRET_ACCESS_KEY ];then
+			print_error "Cloud Account Secret Key not found or couldn't generate with IAM role"
+			exit 127
+	fi
+
+	if [ -z $region ];then
+			print_error "Region Value is not set"
+			exit 127
+	fi
+
+	export "AWS_DEFAULT_REGION"=$region
+
+}
+
+sgAlreadyExists="false"
+getSecurityGroup() {
+	print_log "Getting RDS mysql security group"
+	if [ -n "$vpcId" ];
+	then
+		echo "VpcId = $vpcId"
+
+		if [ -z "$sgId" ];
+		then
+			result=`aws ec2 describe-security-groups --region $region --filters Name=vpc-id,Values=$vpcId Name=group-name,Values=$rdsMySQLSG`
+			sgId=`echo $result | awk -F GroupId '{printf $2}' | awk -F \" '{printf $3}'`
+			if [ -z "$sgId" ]
+			then
+				result=`aws ec2 create-security-group --group-name $rdsMySQLSG --description "RDS-MySQL" --vpc-id $vpcId --region $region`
+				echo "$result"
+				sgId=`echo $result | awk -F GroupId '{printf $2}' | awk -F \" '{printf $3}'`
+			else
+				sgAlreadyExists="true"
+				echo "Security Group Id = $sgId"
+			fi
+			if [ -z "$sgId" ]
+			then
+				print_error "Error in creating the security group"
+				exit 127
+			else
+				rdsMySQLSGParam="$sgId"
+				echo "$rdsMySQLSGParam"
+				if [ "$sgAlreadyExists" == "false" ];
+				then
+					result=`aws ec2 authorize-security-group-ingress --group-id $sgId --protocol tcp --port $port --cidr $cidr --region $region`
+					echo "Authorized the tcp port (vpc)"
+				fi
+			fi
+		else
+			rdsMySQLSGParam="$sgId"
+			echo "$rdsMySQLSGParam"
+		fi
+		print_log "Got security group: $sgId in VPC: $vpcId"
+	else
+
+		result=`aws ec2 describe-account-attributes --region $region | grep VPC | awk -F \": '{print $2}'`
+		if [ $? -ne 0 ];
+		then
+			print_error "error in running aws ec2 describe-account-attributes command"
+			exit 127
+		fi
+
+        if [ -z "$result" ];
+		then
+			ec2result=`aws ec2 describe-account-attributes --region $region | grep EC2 | awk -F \": '{print $2}'`
+			if [ -z $ec2result ];
+			then
+				print_error "Unable to determine the EC2 environment classic or VPC, please pass vpcId, dbSubnetGroup, sgId as app parameters"
+			else
+				print_error "Classic accounts are not supported, please pass vpcId, dbSubnetGroup, sgId as app parameters"
+			fi
+
+			exit 127
+		#vpc
+		else
+			echo "Env is EC2-VPC"
+			result=`aws ec2 describe-account-attributes --region $region`
+			echo "$result"
+			defaultVpcId=`echo $result | awk -F default-vpc '{print $2}' | awk -F AttributeValue '{print $3}' | awk -F \" '{print $3}'`
+			if [ -n "$defaultVpcId" ];
+			then
+				if [ "$defaultVpcId" == "none" ];
+				then
+					print_error "Default VPC is not available for creating the RDS instance, please pass vpcId, dbSubnetGroup, sgId as app parameters"
+                    exit 127
+				else
+					vpcId="$defaultVpcId"
+				fi
+			else
+				print_error "Default VPC is not found for creating the RDS instance, please pass vpcId, dbSubnetGroup, sgId as app parameters"
+				exit 127
+			fi
+
+			if [ -n "$vpcId" ];
+			then
+				echo "VpcId = $vpcId"
+				result=`aws ec2 describe-security-groups --region $region --filters Name=vpc-id,Values=$vpcId Name=group-name,Values=$rdsMySQLSG`
+                sgId=`echo $result | awk -F GroupId '{printf $2}' | awk -F \" '{printf $3}'`
+				if [ -z "$sgId" ]
+				then
+					result=`aws ec2 create-security-group --group-name $rdsMySQLSG --description "RDS-MySQL" --vpc-id $vpcId --region $region`
+					echo "$result"
+					sgId=`echo $result | awk -F GroupId '{printf $2}' | awk -F \" '{printf $3}'`
+				else
+					sgAlreadyExists="true"
+					echo "Security Group Id = $sgId"
+				fi
+				if [ -z "$sgId" ]
+				then
+					print_error "Error in creating the security group"
+					exit 127
+				else
+					rdsMySQLSGParam="$sgId"
+					echo "$rdsMySQLSGParam"
+					if [ "$sgAlreadyExists" == "false" ];
+					then
+						result=`aws ec2 authorize-security-group-ingress --group-id $sgId --protocol tcp --port $port --cidr $cidr --region $region`
+						echo "Authorized the tcp port (vpc)"
+					fi
+				fi
+				print_log "Got security group: $sgId in VPC: $vpcId"
+			else
+				print_error "Error in getting the vpcId while creating the security group"
+				exit 127
+			fi
+
+		fi
+	fi
+
+	if [ -n "$dbSubnetGroup" ];
+	then
+		print_log "Using the DbSubnetGroup $dbSubnetGroup"
+		export subnetGroup="--db-subnet-group-name $dbSubnetGroup"
+
+	fi
+
+}
+
+mkdir -p /usr/local/osmosix/ext_service/
+
+waitForDbReady(){
+        while true; do
+                export status=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep DBInstanceStatus | awk -F : '{print $2}' | awk -F \" '{print $2}'`
+                if [ "$status" = "creating" ] || [ "$status" = "modifying" ] || [ "$status" = "backing-up" ] || [ "$status" = "rebooting" ] || [ "$status" = "resetting-master-credentials" ];
+                then
+                        print_log "Status of the DB instance is $status , waiting for it to become available"
+                        sleep 60
+                elif [ "$status" = "available" ];
+                then
+                        print_log "Status of the DB instance is $status , continuing the deployment"
+                        export endPoint=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep -i \"address\" | awk -F : '{print $2}' | xargs echo`
+                        export endPointPort=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep -i \"port\" | awk -F : '{print $2}' | awk -F , '{print $1}' | tr -d ' '`
+                        break;
+                else
+                        print_error "Status of the DB instance is $status , marking the deployment as an error"
+                        exit 127
+                fi
+        done
+}
+
+waitForDbDelete(){
+        while true; do
+                export status=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep DBInstanceStatus | awk -F : '{print $2}' | awk -F \" '{print $2}'`
+                if [ "$status" = "deleting" ];
+                then
+                        print_log "Status of the DB instance is $status , waiting for it to get deleted"
+                        sleep 60
+                else
+                        print_log "Status of the DB instance is $status"
+                        break;
+                fi
+        done
+}
+
+startRDSInstance(){
+
+	print_log "Creating RDS Instance $instanceName..."
+	if [ -z "$snapshotId" ];
+	then
+		print_log "No snapshotId"
+		print_log "Creating RDS Instance $instanceName..."
+		print_log "aws rds create-db-instance \
+																	 --db-instance-identifier $instanceName \
+																	 --allocated-storage $RDS_VOLUME_SIZE \
+																	 --db-instance-class $instanceType \
+																	 --engine $RDS_ENGINE \
+																	 --engine-version $RDS_VERSION \
+																	 --license-model $RDS_LICENSE_MODEL \
+																	 --multi-az \
+																	 --storage-type $STORAGE_TYPE \
+																	 $subnetGroup \
+																	 --vpc-security-group-ids $sgId \
+																	 --port $port \
+																	 --master-username $cliqrDatabaseRootUserName \
+																	 --master-user-password $cliqrDatabaseRootPass \
+																	 $PUB_ACCESS"
+		result=`aws rds create-db-instance \
+				   --db-instance-identifier $instanceName \
+				   --allocated-storage $RDS_VOLUME_SIZE \
+				   --db-instance-class $instanceType \
+				   --engine $RDS_ENGINE \
+				   --engine-version $RDS_VERSION \
+				   --license-model $RDS_LICENSE_MODEL \
+				   --multi-az \
+				   --storage-type $STORAGE_TYPE \
+				   $subnetGroup \
+				   --vpc-security-group-ids $sgId \
+				   --port $port \
+				   --master-username $cliqrDatabaseRootUserName \
+				   --master-user-password $cliqrDatabaseRootPass \
+				   $PUB_ACCESS`
+
+		print_log $result
+		if [ $? -eq 0 ];
+		then
+			print_log "Invoked aws rds create-db-instance and got the response : $result"
+		else
+			print_error "Error in creating the DBINSTANCE : $result";
+		fi
+	else
+		print_log "Creating RDS Instance $instanceName from the snapshotId $snapshotId"
+		result=`aws rds restore-db-instance-from-db-snapshot --db-instance-identifier $instanceName --db-snapshot-identifier $snapshotId $subnetGroup`
+		print_log $result
+		if [ $? -eq 0 ];
+		then
+			print_log "Invoked aws rds restore-db-instance-from-db-snapshot and got the response : $result"
+		else
+			print_error "Error in creating the DBINSTANCE : $result";
+			exit 127
+		fi
+	fi
+
+	waitForDbReady
+	print_log "Successfully created instance."
+
+	#echo "Snapshot Id = $snapshotId"
+	if [ -n "$snapshotId" ];
+	then
+		result=`aws rds modify-db-instance --db-instance-identifier $instanceName --vpc-security-group-ids $sgId`
+		if [ $? -eq 0 ];
+		then
+			print_log "Successfully added the security group $sgId to the DB Instance"
+		else
+			print_error "Error in assigning the security group $sgId";
+			exit 127
+		fi
+	fi
+	export endPoint=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep -i \"address\" | awk -F : '{print $2}' | xargs echo`
+	export endPointPort=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep -i \"port\" | awk -F : '{print $2}' | awk -F , '{print $1}' | tr -d ' '`
+
+	result=`aws rds describe-db-instances --db-instance-identifier $instanceName`
+	params=""
+	params="$params\"serviceAction\":\"$serviceAction\""
+	environment="\"instanceName\":\"$instanceName\",\"instanceType\":\"$instanceType\",\"serviceType\":\"rdsmysql\",\"productType\":\"mysql\",\"status\":\"$status\",\"port\":\"$port\",\"version\":\"$RDS_VERSION\""
+	content="{\"ipAddress\":\"$endPoint\",\"hostName\":\"$endPoint\",\"environment\":{$environment},\"serviceParams\":{$params}}"
+	if [ -z "$snapshotId" ] && [ -n "$cliqrDBSetupScript" ];
+	then
+		if `mysql -h $endPoint -u $cliqrDatabaseRootUserName -p$cliqrDatabaseRootPass -P $port <"$cliqrDBSetupScript"`
+		then
+			print_log "Successfully executed the DB Setup script.";
+		else
+			print_error "Error occurred while running the DB Setup script - $result";
+			 result=`aws rds delete-db-instance --db-instance-identifier $instanceName --skip-final-snapshot`
+			sleep 30;
+			exit 127;
+		fi
+	fi
+
+	if [ "$isSuspended" == "true" ];
+	then
+		if [ -n "$snapshotId" ];
+		then
+			result=`aws rds  delete-db-snapshot --db-snapshot-identifier $snapshotId`
+		fi
+	fi
+
+	print_ext_service_result "$content"
+	sleep 10;
+
+}
+
+deleteRDSSnapshot(){
+	result=""
+	if [ -n "$snapshotId" ];
+	then
+		result=`aws rds delete-db-snapshot --db-snapshot-identifier $snapshotId`
+	fi
+	params=""
+	params="$params\"serviceAction\":\"$serviceAction\""
+	environment="\"instanceName\":\"$instanceName\",\"instanceType\":\"$instanceType\",\"serviceType\":\"rdsmysql\",\"productType\":\"mysql\",\"status\":\"$status\",\"port\":\"$port\",\"version\":\"$version\""
+	content="{\"ipAddress\":\"$endPoint\",\"hostName\":\"$endPoint\",\"environment\":{$environment},\"serviceParams\":{$params}}"
+	print_ext_service_result "$content"
+}
+
+stopRDSInstance(){
+	#delete with snapshot creation
+	print_log "Deleting RDS mysql instance $instanceName"
+	snapshotName="${instanceName}-Snapshot"
+	result=`aws rds delete-db-instance --db-instance-identifier $instanceName --final-db-snapshot-identifier $snapshotName`
+	if [ $? -eq 0 ];
+	then
+		print_log "Stop DB Instance being invoked creating a snapshot with name $snapshotName"
+	else
+		print_error "Error in deleting DB Instance $instanceName"
+	fi
+	echo $snapshotName
+
+ 	export endPoint=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep -i \"address\" | awk -F : '{print $2}' | xargs echo`
+	export port=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep -i \"port\" | awk -F : '{print $2}' | awk -F , '{print $1}' | tr -d ' '`
+    sleep 10
+	status=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep DBInstanceStatus | awk -F : '{print $2}' | awk -F \" '{print $2}'`
+	if [ -z "$status" ];
+	then
+        print_error "Error in Stopping the DB instance - $result"
+        exit 127
+	elif [ "$status" == "deleting" ];
+	then
+		params=""
+		params="$params\"serviceAction\":\"$serviceAction\",\"snapshotId\":\"$snapshotName\",\"isSuspended\":\"true\""
+		environment="\"instanceName\":\"$instanceName\",\"instanceType\":\"$instanceType\",\"serviceType\":\"rdsmysql\",\"productType\":\"mysql\",\"status\":\"deleted\",\"port\":\"$port\",\"version\":\"$version\""
+		content="{\"ipAddress\":\"$endPoint\",\"hostName\":\"$endPoint\",\"environment\":{$environment},\"serviceParams\":{$params}}"
+		print_ext_service_result "$content"
+
+		#loop till it gets deleted
+		while [  "$status" == "deleting" ]; do
+			waitForDbDelete
+			sleep 20
+			echo $status
+		done
+		print_log "Deleted RDS mysql instance"
+
+	else
+		print_error "Error occurred while deleting the DB instance - $result";
+	fi
+
+	#delete the existing snapshot
+	if [ "$isSuspended" == "true" ];
+	then
+		if [ -n "$snapshotId" ];
+		then
+			result=`aws rds  delete-db-snapshot --db-snapshot-identifier $snapshotId`
+		fi
+	fi
+}
+
+terminateRDSInstance(){
+	#delete with snapshot creation
+	print_log "Deleting RDS mysql instance $instanceName"
+	content=""
+	result=`aws rds delete-db-instance --db-instance-identifier $instanceName --skip-final-snapshot`
+	if [ $? -eq 0 ];
+	then
+		export endPoint=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep -i \"address\" | awk -F : '{print $2}' | xargs echo`
+		export port=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep -i \"port\" | awk -F : '{print $2}' | awk -F , '{print $1}'`
+		status=`aws rds describe-db-instances --db-instance-identifier $instanceName | grep DBInstanceStatus | awk -F : '{print $2}' | awk -F \" '{print $2}'`
+		if [ -z "$status" ];
+		then
+			print_log "Error in Stopping the DB instance - $result"
+			sleep 10
+		elif [ "$status" == "deleting" ];
+		then
+
+			#loop till it gets deleted
+			while [  "$status" == "deleting" ]; do
+				waitForDbDelete
+				sleep 20
+				echo $status
+			done
+			print_log "Deleted RDS mysql instance"
+		else
+			print_log "Error occurred while deleting the DB instance - $result";
+		fi
+	fi
+
+	params=""
+	params="$params\"serviceAction\":\"$serviceAction\",\"snapshotId\":\"$snapshotName\""
+	environment="\"instanceName\":\"$instanceName\",\"instanceType\":\"$instanceType\",\"serviceType\":\"rdsmysql\",\"productType\":\"mysql\",\"status\":\"deleted\",\"port\":\"$port\",\"version\":\"$version\""
+	content="{\"ipAddress\":\"$endPoint\",\"hostName\":\"$endPoint\",\"environment\":{$environment},\"serviceParams\":{$params}}"
+
+	if [ "$isSuspended" == "true" ];
+	then
+		if [ -n "$snapshotId" ];
+		then
+			result=`aws rds  delete-db-snapshot --db-snapshot-identifier $snapshotId`
+		fi
+	fi
+	print_ext_service_result "$content"
+
+}
+
+performRDSServiceAction(){
+	configureRDSCli
+	getSecurityGroup
+	echo "Performing $1 ...."
+	case $1 in
+		start)
+			startRDSInstance
+			;;
+		stop)
+			terminateRDSInstance
+			;;
+		suspend)
+			stopRDSInstance
+			;;
+        resume)
+			startRDSInstance
+			;;
+		terminate)
+			deleteRDSSnapshot
+			;;
+		*)
+			print_error "Unknown Service Command - $1"
+			exit 127
+			;;
+	esac
+}
+
+case $cmd in
+	start)
+		echo "Service Action -  $cmd"
+		echo "Installing EC2, RDS Cli tools"
+		#TODO: unfortunately, installing of RDS cli has to be done every time service action is performed, unless we support docker image mapping or preserve previous docker container
+		installRDSCli
+		performRDSServiceAction "$cmd"
+		;;
+	stop)
+		echo "Service Action -  $cmd"
+		echo "Installing EC2, RDS Cli tools"
+		installRDSCli
+		performRDSServiceAction "$cmd"
+		;;
+	suspend)
+		echo "Service Action -  $cmd"
+		echo "Installing EC2, RDS Cli tools"
+		installRDSCli
+		performRDSServiceAction "$cmd"
+		;;
+	resume)
+		echo "Service Action -  $cmd"
+		echo "Installing EC2, RDS Cli tools"
+		installRDSCli
+		performRDSServiceAction "$cmd"
+		;;
+	*)
+		echo "unknown command"
+		exit 127
+		;;
+esac
