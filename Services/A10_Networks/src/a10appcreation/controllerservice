@@ -1,0 +1,112 @@
+#!/bin/bash
+#For external-service
+. /utils.sh
+
+cmd=$1
+memberIPs=""
+dictionaryFileName="serviceDictionary.csv"
+
+# RUN EVERYTHING AS ROOT
+if [ "$(id -u)" != "0" ]; then
+    exec sudo "$0" "$@"
+fi
+
+function setup_prereqs() {
+  echo "No Prerequistes"
+}
+
+function getMembers() {
+  if [ -z "$CliqrDependencies" ] 
+  then
+	memberIPs="[\"\"]"
+  else
+  	for tier in $(echo $CliqrDependencies | tr "," "\n" )
+  	do
+    		members=CliqrTier_${tier}_PUBLIC_IP
+    		for ip in $(echo ${!members} | tr "=" "\n" | tr "," "\n")
+    		do
+      			memberIPs=$memberIPs"\"$ip\", "
+    		done
+    		memberIPs=`echo $memberIPs |sed s'/.$//'`
+		memberIPs="[$memberIPs]"	
+  	done
+   fi
+}
+
+function createParamsJSON() {
+paramLine=""
+while IFS=',' read -r displayName paramName paramType defValue varVisible optionalParam
+do
+  if [ "$varVisible" == "Y" ] || [ "$varVisible" == "y" ]
+  then
+        if [ "$paramType" == "cliqrtier" ]
+        then
+            paramLine=$paramLine"  \"${paramName}\": ${memberIPs},\n"
+        else
+            paramLine=$paramLine"  \"${paramName}\": \"${!paramName}\",\n"
+        fi
+  else
+        paramLine=$paramLine"  \"${paramName}\": \"${defValue}\",\n"
+  fi
+done < "$dictionaryFileName"
+paramLine=`echo $paramLine |sed s'/...$//'`
+
+echo -e "{\n$paramLine\n}" >> params.json
+}
+
+function executionStatus() {
+ FILE="FAILURE"
+ if [ -f $FILE ];
+ then
+    status=`cat $FILE`
+    print_log "A10 Configuration Failed"
+    print_log "$status"
+    print_log "Feel free to contact A10 Support at cloud-support@a10networks.com with the error message"
+    exit 127   
+  else
+    FILE="SUCCESS"
+    status="Successfully configured application. Deployment and configuration of Lightning ADCs and Harmony Controller is complete. Please login to Harmony Portal to review (and edit) the configuration and policies before enabling traffic through Lightning ADC. Feel free to contact A10 Support at cloud-support@a10networks.com for any help."
+    print_log "$status"
+ fi
+}
+
+print_log "Installing pre requisites.."
+setup_prereqs
+print_log "Retrieving Members.."
+getMembers
+print_log "Setting the params.."
+createParamsJSON
+case $cmd in
+	start)
+		print_log "Creating Application $app_name in Harmony Controller"
+		output=$(python create-app.py 2>&1)			
+		if [[ $output == *"Error"* ]];
+                then
+                        echo $output >> FAILURE
+                fi
+		executionStatus
+		;;
+	stop)
+		print_log "Deleting Application and Cluster from Harmony Controller.."
+		output=$(python teardown.py 2>&1)			
+		if [[ $output == *"Error"* ]];
+                then
+                        echo $output >> FAILURE
+                fi
+		executionStatus
+		;;
+	update)
+		print_log "Updating Service.."
+		print_log "Adding addition Servers to Application $app_name"
+		output=$(python update-servers.py 2>&1)
+	        if [[ $output == *"Error"* ]];
+                then
+                        echo $output >> FAILURE
+                fi
+		executionStatus
+		;;
+	*)
+		serviceStatus="No Valid Script Argument"
+		exit 127
+		;;
+esac

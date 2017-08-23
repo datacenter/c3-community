@@ -1,0 +1,11 @@
+A10 API Server,a10_api_server,string,,Y,N
+Provider,provider,string,,Y,N
+Tenant,tenant,string,Cisco,Y,N
+A10 User,a10_user,string,,Y,N
+A10 Password,a10_user_passwd,string,,Y,N
+Cluster Name,cluster_name,string,,Y,N
+Cluster ID,cluster_id,string,,Y,N
+Server IPS,server_ips,cliqrtier,,Y,N
+Application Name,app_name,string,,Y,N
+Service Name,service_name,string,,Y,N
+Domain Name,domain_name,string,,Y,N
