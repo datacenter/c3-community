@@ -1,0 +1,16 @@
+<!-- Sample Custom.xml file in Custom actions directory "/opt/appdynamics/controller/custom/actions" -->
+<custom-actions>
+  <action>
+     <type>c3-scale-up</type>
+     <executable>update-job-up.py</executable>
+  </action>
+  <action>
+    <type>c3-scale-down</type>
+    <executable>update-job-down.py</executable>
+  </action>
+</custom-actions>
+
+<!-- Sample structure for custom actions -->
+<!-- [root@AppD-Controller actions]# cd c3-scale-up/ -->
+<!-- [root@AppD-Controller c3-scale-up]#  ls -l -->
+<!-- update-job-up.py -->
