@@ -13,9 +13,9 @@ yum install wget -y
 
 echo "Downloading the migration script.."
 cd /tmp/
-wget ${SCRIPT_LOCATION}/CE_Cisco_Integration_2_6.py
+wget ${SCRIPT_LOCATION}/CE_Cisco_Integration.py
 
-python CE_Cisco_Integration_2_6.py -u $user -p $passwd -n $hostname &
+python CE_Cisco_Integration.py -u $user -p $passwd -n $hostname -j $ceproject &
 
 migration_pid=$!
 
@@ -28,4 +28,3 @@ do
 done
 
 echo "Migration Task Completed..."
-
