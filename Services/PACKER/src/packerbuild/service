@@ -28,7 +28,6 @@ function setup_prereqs() {
    wget $PACKER_ZIP_URL -O packerbin.zip
    unzip packerbin.zip
 
-   wget https://sp-poc.s3.amazonaws.com/bundles/services/packer/packer-builder-amazon-ebs
    chmod +x packer-builder-amazon-ebs
 
    wget http://stedolan.github.io/jq/download/linux64/jq
