@@ -1,0 +1,130 @@
+#!/bin/bash
+
+
+#For external-service
+. /utils.sh
+
+cmd=$1
+dictionaryFileName="serviceDictionary.csv"
+export ami_id=""
+export image_id=""
+
+### This example assumes the root tenant where the image is going to be added
+export tenant_id=$launchVendorId
+
+export cloud_id=""
+export cloud_region_id=""
+
+# RUN EVERYTHING AS ROOT
+if [ "$(id -u)" != "0" ]; then
+    exec sudo "$0" "$@"
+fi
+
+function setup_prereqs() {
+# Install Pre Reqs
+   print_log "Installing pre requistes.."
+
+   print_log "Installing Packer and plugin..."
+   wget $PACKER_ZIP_URL -O packerbin.zip
+   unzip packerbin.zip
+
+   wget https://sp-poc.s3.amazonaws.com/bundles/services/packer/packer-builder-amazon-ebs
+   chmod +x packer-builder-amazon-ebs
+
+   wget http://stedolan.github.io/jq/download/linux64/jq
+   chmod 755 jq
+   mv jq /usr/bin
+}
+
+function getCloudInfo() {
+    print_log "Getting Cloud Info.."
+    cloud_name=$CloudFamily
+    cloud_region=$CliqrCloud_RegionEndPoint
+    cloud_info=$(curl -k -X GET -H "Accept: application/json" -H "Content-Type: application/json" -u $api_user:$api_key "$ccm_url/v1/tenants/$tenant_id/clouds?detail=true")
+    num_of_clouds=$(echo ${cloud_info} | jq .totalElements | sed 's/"//g') 
+    for i in `seq 0 $num_of_clouds`
+      do
+	 name=$(echo ${cloud_info} | jq .clouds[$i].cloudFamily | sed 's/"//g')
+	 if [ "$name" == "$cloud_name" ] ; then
+            export cloud_id=$(echo ${cloud_info} | jq .clouds[$i].id | sed 's/"//g')
+  	    num_of_regions=$(echo ${cloud_info} | jq ".clouds[$i].detail.cloudRegions | length")
+    	    for j in `seq 0 $num_of_regions`
+              do
+	       region_endpoint=$(echo ${cloud_info} | jq .clouds[$i].detail.cloudRegions[$j].regionProperties[0].value | sed 's/"//g')
+	       if [ "$region_endpoint" == "$cloud_region" ]; then
+		  export cloud_region_id=$(echo ${cloud_info} | jq .clouds[$i].detail.cloudRegions[$j].id | sed 's/"//g')
+	       fi
+            done
+	fi
+    done		
+}
+    
+
+function createParamsJSON() {
+print_log "Setting the params.."
+paramLine=""
+while IFS=',' read -r displayName paramName paramType defValue varVisible optionalParam
+do
+  if [ "$paramType" == "cliqrtier" ]
+  then
+    paramLine=$paramLine"  \"${paramName}\": ${memberIPs},\n"
+  else
+    if [[ -z "${!paramName}" ]]
+    then
+      paramLine=$paramLine"  \"${paramName}\": \"${defValue}\",\n"
+    else
+      paramLine=$paramLine"  \"${paramName}\": \"${!paramName}\",\n"
+     fi
+   fi
+done < "$dictionaryFileName"
+paramLine=`echo $paramLine |sed s'/...$//'`
+
+echo -e "{\n$paramLine\n}" >> params.json
+}
+
+
+
+function buildImage() {
+  print_log "Building image using packer.."
+  cp /opt/remoteFiles/template_url/* templates/template.json
+  cp /opt/remoteFiles/provisioner_script_url/* scripts/
+
+  ./packer build -machine-readable -var-file=params.json templates/template.json | tee output.log
+  ami_id=$(egrep -m1 -oe 'ami-.{8}' output.log)
+
+  print_log "Image with id $ami_id built.."
+}
+
+
+function addImage() {
+
+  print_log "Adding Image $image_name to CloudCenter.."
+
+  curl -k -X POST -d '{"name": "'"$image_name"'", "description": "'"$image_desc"'","visibility": "PUBLIC","numOfNics": "'"$num_of_nics"'","osName": "'"$os_type"'","enabled": true,"imageType": "CLOUD_WORKER"}' -H "Accept: application/json" -H "Content-Type: application/json" -u $api_user:$api_key "$ccm_url/v1/tenants/$tenant_id/images" >> imageid.json
+  image_id=$(cat imageid.json | jq .id | sed 's/"//g')
+}
+
+function addImageMapping() {
+
+  curl -k -X POST -d '{"cloudProviderImageId": "'"$ami_id"'", "grantAndRevoke":false, "regionId":"'"$cloud_region_id"'", "imageId":"'"$image_id"'"}'  -H "Accept: application/json" -H "Content-Type: application/json" -u $api_user:$api_key "$ccm_url/v1/tenants/$tenant_id/clouds/$cloud_id/regions/$cloud_region_id/images"
+  print_log "Added image mapping for $image_name in CloudCenter.."
+}
+
+
+setup_prereqs
+createParamsJSON
+
+case $cmd in
+	start)
+		print_log "Executing Service.."
+		buildImage
+		getCloudInfo
+                addImage
+		addImageMapping
+		;;
+	*)
+		serviceStatus="No Valid Script Argument"
+		exit 127
+		;;
+esac
+
