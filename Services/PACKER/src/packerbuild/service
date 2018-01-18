@@ -8,6 +8,8 @@ cmd=$1
 dictionaryFileName="serviceDictionary.csv"
 export ami_id=""
 export image_id=""
+export aws_access_key=$CliqrCloudAccountPwd
+export aws_secret_key=$CliqrCloud_AccessSecretKey
 
 ### This example assumes the root tenant where the image is going to be added
 export tenant_id=$launchVendorId
