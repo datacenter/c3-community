@@ -9,5 +9,4 @@ SSH Username,ssh_username,string,,Y,N
 Virtualization,virtualisation,string,hvm,Y,N
 Root Volume Size,root_volume_size,10,Y,N
 Log Volume Size,log_volume_size,10,Y.N
-Deployment Environment,dep_environment,,Y,N
 Region,region,,Y,N
