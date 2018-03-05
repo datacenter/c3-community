@@ -1,0 +1,217 @@
+{
+  "name": "{{ name }}",
+  "template": "appsvcs_integration_v2.0.004",
+  "virtualServerReferences": [
+    {
+      "link": "https://localhost/mgmt/tm/cloud/ltm/virtual-servers/39333"
+    }
+  ],
+  "vars": {
+    "extensions__Field1": "{{ extensions__Field1 }}",
+    "extensions__Field2": "{{ extensions__Field2 }}",
+    "extensions__Field3": "{{ extensions__Field3 }}",
+    "feature__easyL4Firewall": "{{ feature__easyL4Firewall }}",
+    "feature__insertXForwardedFor": "{{ feature__insertXForwardedFor }}",
+    "feature__redirectToHTTPS": "{{ feature__redirectToHTTPS }}",
+    "feature__securityEnableHSTS": "{{ feature__securityEnableHSTS }}",
+    "feature__sslEasyCipher": "{{ feature__sslEasyCipher }}",
+    "feature__statsHTTP": "{{ feature__statsHTTP }}",
+    "feature__statsTLS": "{{ feature__statsTLS }}",
+    "iapp__apmDeployMode": "{{ iapp__apmDeployMode }}",
+    "iapp__appStats": "{{ iapp__appStats }}",
+    "iapp__asmDeployMode": "{{ iapp__asmDeployMode }}",
+    "iapp__logLevel": "{{ iapp__logLevel }}",
+    "iapp__mode": "{{ iapp__mode }}",
+    "iapp__routeDomain": "{{ iapp__routeDomain }}",
+    "iapp__strictUpdates": "{{ iapp__strictUpdates }}",
+    "l7policy__defaultASM": "{{ l7policy__defaultASM }}",
+    "l7policy__defaultL7DOS": "{{ l7policy__defaultL7DOS }}",
+    "l7policy__strategy": "{{ l7policy__strategy }}",
+    "pool__DefaultPoolIndex": "{{ pool__DefaultPoolIndex }}",
+    "pool__MemberDefaultPort": "{{ pool__MemberDefaultPort }}",
+    "pool__addr": "{{ pool__addr }}",
+    "pool__mask": "{{ pool__mask }}",
+    "pool__port": "{{ pool__port }}",
+    "vs__AdvOptions": "{{ vs__AdvOptions }}",
+    "vs__AdvPolicies": "{{ vs__AdvPolicies }}",
+    "vs__AdvProfiles": "{{ vs__AdvProfiles }}",
+    "vs__ConnectionLimit": "{{ vs__ConnectionLimit }}",
+    "vs__Description": "{{ vs__Description }}",
+    "vs__IpProtocol": "{{ vs__IpProtocol }}",
+    "vs__Irules": "{{ vs__Irules }}",
+    "vs__Name": "{{ vs__Name }}",
+    "vs__OptionConnectionMirroring": "{{ vs__OptionConnectionMirroring }}",
+    "vs__OptionSourcePort": "{{ vs__OptionSourcePort }}",
+    "vs__ProfileAccess": "{{ vs__ProfileAccess }}",
+    "vs__ProfileAnalytics": "{{ vs__ProfileAnalytics }}",
+    "vs__ProfileClientProtocol": "{{ vs__ProfileClientProtocol }}",
+    "vs__ProfileClientSSL": "{{ vs__ProfileClientSSL }}",
+    "vs__ProfileClientSSLAdvOptions": "{{ vs__ProfileClientSSLAdvOptions }}",
+    "vs__ProfileClientSSLCert": "{{ vs__ProfileClientSSLCert }}",
+    "vs__ProfileClientSSLChain": "{{ vs__ProfileClientSSLChain }}",
+    "vs__ProfileClientSSLCipherString": "{{ vs__ProfileClientSSLCipherString }}",
+    "vs__ProfileClientSSLKey": "{{ vs__ProfileClientSSLKey }}",
+    "vs__ProfileCompression": "{{ vs__ProfileCompression }}",
+    "vs__ProfileConnectivity": "{{ vs__ProfileConnectivity }}",
+    "vs__ProfileDefaultPersist": "{{ vs__ProfileDefaultPersist }}",
+    "vs__ProfileFallbackPersist": "{{ vs__ProfileFallbackPersist }}",
+    "vs__ProfileHTTP": "{{ vs__ProfileHTTP }}",
+    "vs__ProfileOneConnect": "{{ vs__ProfileOneConnect }}",
+    "vs__ProfilePerRequest": "{{ vs__ProfilePerRequest }}",
+    "vs__ProfileRequestLogging": "{{ vs__ProfileRequestLogging }}",
+    "vs__ProfileSecurityDoS": "{{ vs__ProfileSecurityDoS }}",
+    "vs__ProfileSecurityIPBlacklist": "{{ vs__ProfileSecurityIPBlacklist }}",
+    "vs__ProfileSecurityLogProfiles": "{{ vs__ProfileSecurityLogProfiles }}",
+    "vs__ProfileServerProtocol": "{{ vs__ProfileServerProtocol }}",
+    "vs__ProfileServerSSL": "{{ vs__ProfileServerSSL }}",
+    "vs__RouteAdv": "{{ vs__RouteAdv }}",
+    "vs__SNATConfig": "{{ vs__SNATConfig }}",
+    "vs__SourceAddress": "{{ vs__SourceAddress }}",
+    "vs__VirtualAddrAdvOptions": "{{ vs__VirtualAddrAdvOptions }}"
+  },
+  "tables": {
+    "feature__easyL4FirewallBlacklist": {
+      "columns": [
+        "CIDRRange"
+      ],
+      "rows": [
+        [
+          "{{ feature__easyL4FirewallBlacklist_CIDRRange }}"
+        ]
+      ]
+    },
+    "feature__easyL4FirewallSourceList": {
+      "columns": [
+        "CIDRRange"
+      ],
+      "rows": [
+        [
+          "{{ feature__easyL4FirewallSourceList_CIDRRange }}"
+        ]
+      ]
+    },
+    "l7policy__rulesAction": {
+      "columns": [
+        "Group",
+        "Target",
+        "Parameter"
+      ],
+      "rows": [
+        [
+          "{{ l7policy__rulesAction_Group }}",
+          "{{ l7policy__rulesAction_Target }}",
+          "{{ l7policy__rulesAction_Parameter }}"
+        ]
+      ]
+    },
+    "l7policy__rulesMatch": {
+      "columns": [
+        "Group",
+        "Operand",
+        "Negate",
+        "Condition",
+        "Value",
+        "CaseSensitive",
+        "Missing"
+      ],
+      "rows": [
+        [
+          "{{ l7policy__rulesMatch_Group }}",
+          "{{ l7policy__rulesMatch_Operand }}",
+          "{{ l7policy__rulesMatch_Negate }}",
+          "{{ l7policy__rulesMatch_Condition }}",
+          "{{ l7policy__rulesMatch_Value }}",
+          "{{ l7policy__rulesMatch_CaseSensitive }}",
+          "{{ l7policy__rulesMatch_Missing }}"
+        ]
+      ]
+    },
+    "monitor__Monitors": {
+      "columns": [
+        "Index",
+        "Name",
+        "Type",
+        "Options"
+      ],
+      "rows": [
+        [
+          "{{ monitor__Monitors_Index }}",
+          "{{ monitor__Monitors_Name }}",
+          "{{ monitor__Monitors_Type }}",
+          "{{ monitor__Monitors_Options }}"
+        ]
+      ]
+    },
+    "pool__Members": {
+      "columns": [
+        "Index",
+        "IPAddress",
+        "Port",
+        "ConnectionLimit",
+        "Ratio",
+        "PriorityGroup",
+        "State",
+        "AdvOptions"
+      ],
+      "rows": [
+      	{% for memberIP in pool__Members_IPAddress %}
+        [
+          "{{ pool__Members_Index }}",
+          "{{ memberIP[0] }}",
+          "{{ pool__Members_Port }}",
+          "{{ pool__Members_ConnectionLimit }}",
+          "{{ pool__Members_Ratio }}",
+          "{{ pool__Members_PriorityGroup }}",
+          "{{ pool__Members_State }}",
+          "{{ pool__Members_AdvOptions }}"
+        ]{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    },
+    "pool__Pools": {
+      "columns": [
+        "Index",
+        "Name",
+        "Description",
+        "LbMethod",
+        "Monitor",
+        "AdvOptions"
+      ],
+      "rows": [
+        [
+          "{{ pool__Pools_Index }}",
+          "{{ pool__Pools_Name }}",
+          "{{ pool__Pools_Description }}",
+          "{{ pool__Pools_LbMethod }}",
+          "{{ pool__Pools_Monitor }}",
+          "{{ pool__Pools_AdvOptions }}"
+        ]
+      ]
+    },
+    "vs__BundledItems": {
+      "columns": [
+        "Resource"
+      ],
+      "rows": [
+        [
+          "{{ vs__BundledItems_Resource }}"
+        ]
+      ]
+    },
+    "vs__Listeners": {
+      "columns": [
+        "Listener",
+        "Destination"
+      ],
+      "rows": [
+        [
+          "{{ vs__Listeners_Listener }}",
+          "{{ vs__Listeners_Destination }}"
+        ]
+      ]
+    }
+  },
+  "generation": 0,
+  "lastUpdateMicros": 0,
+  "selfLink": "https://localhost/mgmt/tm/cloud/services/iapp/{{ name }}"
+}
