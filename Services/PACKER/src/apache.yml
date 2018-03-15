@@ -1,0 +1,8 @@
+---
+- hosts: all
+  tasks:
+   - name: Install apache
+     yum: pkg=httpd state=present
+
+   - name: http service state
+     service: name=httpd state=started enabled=yes
