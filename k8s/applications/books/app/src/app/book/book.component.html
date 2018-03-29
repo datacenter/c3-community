@@ -1,0 +1,19 @@
+<md-card>
+  <div class="row-container">
+    <div class="row-icon">
+      <md-icon>book</md-icon>
+    </div>
+    <div class="row-content">
+      <md-card-title>{{book.title}}</md-card-title>
+      <md-card-subtitle>{{book.author}} - {{shelf.theme}}</md-card-subtitle>
+      <md-card-content>{{book.description}}</md-card-content>
+    </div>
+    <div class="row-buttons">
+      <md-card-actions>
+        <button md-raised-button [disabled]="isPurchased()" (click)="purchaseBook()" class="purchase">
+          Purchase
+        </button>
+      </md-card-actions>
+    </div>
+  </div>
+</md-card>
