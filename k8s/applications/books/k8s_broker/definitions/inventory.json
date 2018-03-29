@@ -1,0 +1,20 @@
+{
+  "name": "inventory",
+  "id": "35484a79-4ba7-4b2f-b5c3-fa98caccddf8",
+  "description": "Inventory service for bookstore",
+  "metadata": {
+      "longDescription": "Inventory service for bookstore",
+      "providerDisplayName": "Inventory Team"
+  },
+  "plans": [
+    {
+      "name": "default",
+      "id": "cc1e6d95-a54b-410e-92f5-293e0eef5f3e",
+      "description": "Default plan for inventory",
+      "metadata": {
+        "instanceType": "gs://helm-sb-test/bookstore-0.0.10.tgz"
+      }
+    }
+  ],
+  "bindable": true
+}

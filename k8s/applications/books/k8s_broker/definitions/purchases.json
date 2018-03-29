@@ -1,0 +1,20 @@
+{
+  "name": "purchases",
+  "id": "1b380f2d-0db9-4adc-b15f-257b3caed23a",
+  "description": "Purchases service for bookstore",
+  "metadata": {
+      "longDescription": "Purchases service for bookstore",
+      "providerDisplayName": "Purchases Team"
+  },
+  "plans": [
+    {
+      "name": "default",
+      "id": "b9373540-d108-4559-b7d4-c9cf18b45c3d",
+      "description": "Default plan for purchases",
+      "metadata": {
+        "instanceType": "gs://helm-sb-test/purchases-0.0.8.tgz"
+      }
+    }
+  ],
+  "bindable": true
+}
