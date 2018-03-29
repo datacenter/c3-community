@@ -1,0 +1,2 @@
+hostname: inventory
+port: 8080
