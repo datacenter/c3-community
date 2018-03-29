@@ -1,0 +1,29 @@
+# APP -> USERS
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: booksfe-users
+spec:
+  instanceRef:
+    name: users
+    namespace: default
+---
+# APP -> INVENTORY
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: booksfe-inventory
+spec:
+  instanceRef:
+    name: inventory
+    namespace: default
+---
+# APP -> PURCHASES
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: booksfe-purchases
+spec:
+  instanceRef:
+    name: purchases
+    namespace: default

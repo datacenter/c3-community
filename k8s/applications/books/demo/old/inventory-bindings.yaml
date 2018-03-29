@@ -1,0 +1,19 @@
+apiVersion: servicecatalog.k8s.io/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: purchases-inventory
+name: purchases-inventory
+spec:
+  instanceRef:
+    name: inventory
+    namespace: default
+---
+apiVersion: servicecatalog.k8s.io/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: booksfe-inventory
+name: booksfe-inventory
+spec:
+  instanceRef:
+    name: inventory
+    namespace: default

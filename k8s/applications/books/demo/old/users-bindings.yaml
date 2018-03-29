@@ -1,0 +1,19 @@
+apiVersion: servicecatalog.k8s.io/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: purchases-users
+name: purchases-users
+spec:
+  instanceRef:
+    name: users
+    namespace: default
+---
+apiVersion: servicecatalog.k8s.io/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: booksfe-users
+name: booksfe-users
+spec:
+  instanceRef:
+    name: users
+    namespace: default

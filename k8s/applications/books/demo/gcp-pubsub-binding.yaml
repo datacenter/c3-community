@@ -1,0 +1,13 @@
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: gcp-pubsub-binding
+spec:
+  instanceRef:
+    name: gcp-pubsub-instance
+  secretName: gcp-pubsub-credentials
+  parameters:
+    # The user should update the service account here to point to the service
+    # account in their project they created for this demo.
+    roles: ["roles/pubsub.admin"]
+    serviceAccount: ## INSERT SERVICE ACCOUNT HERE ##
