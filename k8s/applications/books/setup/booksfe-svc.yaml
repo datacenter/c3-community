@@ -6,6 +6,7 @@ spec:
   ports:
   - port: 8080
     protocol: TCP
+    nodePort: 31580
   selector:
     app: booksfe
-  type: LoadBalancer
+  type: NodePort
