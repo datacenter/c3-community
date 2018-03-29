@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# Usage:
+#   ./build users bmelville-test
+
+if [[ $# -ne 2 ]]; then
+  echo "Usage: build <service> <GCR repo>"
+  exit 1
+fi
+
+service=$1
+gcr_repo=$2
+
+image="gcr.io/${gcr_repo}/${service}"
+
+cd "${service}"
+docker build -t "${image}" .
+gcloud docker -- push "${image}"
+cd ..
