@@ -1,0 +1,52 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: purchases
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: purchases-service
+        target_service: purchases-service
+        targetService: purchases-service
+        app: purchases
+    spec:
+      containers:
+      - name: purchases-svc
+        image: {{ .Values.image }}
+        ports:
+          - containerPort: 8080
+        env:
+          - name: SVC_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: SVC_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+
+          # User service information from binding.
+          - name: SVC_USERS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: purchases-users
+                key: hostname
+          - name: SVC_USERS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: purchases-users
+                key: port
+
+          # Bookstore service information from binding.
+          - name: SVC_BOOKS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: purchases-inventory
+                key: hostname
+          - name: SVC_BOOKS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: purchases-inventory
+                key: port
