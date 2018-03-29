@@ -1,0 +1,19 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: users
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: users-service
+        target_service: users-service
+        targetService: users-service
+        app: users
+    spec:
+      containers:
+      - name: users-svc
+        image: gcr.io/sc-bookstore-demo/users:demo
+        ports:
+          - containerPort: 8080

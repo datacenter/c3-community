@@ -1,0 +1,19 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: inventory
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: inventory-service
+        target_service: inventory-service
+        targetService: inventory-service
+        app: inventory
+    spec:
+      containers:
+      - name: inventory-svc
+        image: gcr.io/sc-bookstore-demo/inventory:demo
+        ports:
+          - containerPort: 8080
