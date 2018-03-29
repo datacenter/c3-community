@@ -3,5 +3,9 @@ kind: ServiceInstance
 metadata:
   name: gcp-iam-instance
 spec:
-  clusterServiceClassExternalName: iam
-  clusterServicePlanExternalName: 20171026-00
+  clusterServiceClassExternalName: cloud-iam-service-account
+  clusterServicePlanExternalName: 20180313-00
+  parameters:
+      accountId: <<SERVICE_ACCOUNT_ID>>
+# The SERVICE_ACCOUNT_ID is a user defined identifier, such as scgcpbrk
+# so choose a name that is unique. *underscores not allowed*
