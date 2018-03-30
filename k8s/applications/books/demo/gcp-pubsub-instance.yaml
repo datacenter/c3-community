@@ -4,5 +4,10 @@ kind: ServiceInstance
 metadata:
   name: gcp-pubsub-instance
 spec:
-  clusterServiceClassExternalName: pubsub
-  clusterServicePlanExternalName: pubsub-plan
+  clusterServiceClassExternalName: cloud-pubsub
+  clusterServicePlanExternalName: 20180313-00
+  parameters:
+    topicID: PUBSUB_TOPIC_ID
+# The PUBSUB_TOPIC_ID is a user defined identifier, such as mytopic1, so choose a name that is unique. 
+# The PUBSUB_TOPIC_ID must start with a letter, and contain only letters (`[A-Za-z]`), numbers (`[0-9]`), dashes (`-`), 
+# underscores (`_`), periods (`.`), tildes (`~`), plus (`+`) or percent signs (`%`)
