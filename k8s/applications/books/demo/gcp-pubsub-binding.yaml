@@ -9,5 +9,6 @@ spec:
   parameters:
     # The user should update the service account here to point to the service
     # account in their project they created for this demo.
-    roles: ["roles/pubsub.admin"]
+    # roles: ["roles/pubsub.admin"]  <- commented out on purpose
     serviceAccount: ## INSERT SERVICE ACCOUNT HERE ##
+    bindingType: publisher
