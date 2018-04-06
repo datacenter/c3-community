@@ -1,0 +1,95 @@
+App Services Name,name,string,,Y,N
+(Extensions) Field 1,extensions__Field1,string,,Y,Y
+(Extensions) Field 2,extensions__Field2,string,,Y,Y
+(Extensions) Field 3,extensions__Field3,string,,Y,Y
+(Feature) Easy L4 Firewall,feature__easyL4Firewall,string,disabled,N,Y
+(Feature) Insert X Forwarded For,feature__insertXForwardedFor,string,auto,Y,Y
+(Feature) Redirect To HTTPS,feature__redirectToHTTPS,string,auto,Y,Y
+(Feature) Security Enable HSTS,feature__securityEnableHSTS,string,disabled,Y,Y
+(Feature) SSL Easy Cipher,feature__sslEasyCipher,string,disabled,Y,Y
+(Feature) Stats HTTP,feature__statsHTTP,string,auto,Y,Y
+(Feature) Stats TLS,feature__statsTLS,string,auto,Y,Y
+(iApps) APM Deploy Mode,iapp__apmDeployMode,string,preserve-bypass,Y,Y
+(iApps) App Stats,iapp__appStats,string,enabled,Y,Y
+(iApps) ASM Deploy Mode,iapp__asmDeployMode,string,preserve-bypass,Y,Y
+(iApps) Log Level,iapp__logLevel,integer,7,Y,Y
+(iApps) Mode,iapp__mode,string,auto,Y,Y
+(iApps) Route Domain,iapp__routeDomain,string,auto,Y,Y
+(iApps) Strict Updates,iapp__strictUpdates,string,enabled,Y,Y
+(L7 Policy) Default ASM,l7policy__defaultASM,string,bypass,Y,Y
+(L7 Policy) Default L7 DoS,l7policy__defaultL7DOS,string,bypass,Y,Y
+(L7 Policy) Strategy,l7policy__strategy,string,/Common/first-match,Y,Y
+(Pool) Default Pool Index,pool__DefaultPoolIndex,integer,0,Y,Y
+(Pool) Member Default Port,pool__MemberDefaultPort,integer,,Y,Y
+(Pool) VIP,pool__addr,string,,Y,N
+(Pool) VIP Mask,pool__mask,string,255.255.255.255,Y,N
+(Pool) VIP Port,pool__port,string,,Y,N
+(VS) Advanced Options,vs__AdvOptions,string,,Y,Y
+(VS) Advanced Policies,vs__AdvPolicies,string,,Y,Y
+(VS) Advanced Profiles,vs__AdvProfiles,string,,Y,Y
+(VS) Connection Limit,vs__ConnectionLimit,integer,0,Y,Y
+(VS) Description,vs__Description,string,,Y,Y
+(VS) IP Protocol,vs__IpProtocol,string,tcp,Y,N
+(VS) iRules,vs__Irules,string,,Y,Y
+(VS) Name,vs__Name,string,,Y,Y
+(VS) Connection Mirroring,vs__OptionConnectionMirroring,string,disabled,Y,Y
+(VS) Source Port,vs__OptionSourcePort,string,preserve,Y,Y
+(VS) Access Profile,vs__ProfileAccess,string,,Y,Y
+(VS) Analytics Profile,vs__ProfileAnalytics,string,,Y,Y
+(VS) Client Protocol Profile,vs__ProfileClientProtocol,string,/Common/tcp-wan-optimized,Y,N
+(VS) Client SSL Profile,vs__ProfileClientSSL,string,,Y,Y
+(VS) Client SSL Advanced Options,vs__ProfileClientSSLAdvOptions,string,,Y,Y
+(VS) Client SSL Certificate,vs__ProfileClientSSLCert,string,,Y,Y
+(VS) Client SSL Chain,vs__ProfileClientSSLChain,string,,Y,Y
+(VS) Client SSL Cipher String,vs__ProfileClientSSLCipherString,string,DEFAULT,Y,Y
+(VS) Client SSL Key,vs__ProfileClientSSLKey,string,,Y,Y
+(VS) Compression Profile,vs__ProfileCompression,string,,Y,Y
+(VS) Connectivity Profile,vs__ProfileConnectivity,string,,Y,Y
+(VS) Default Persistence Profile,vs__ProfileDefaultPersist,string,,Y,Y
+(VS) Fallback Persistence Profile,vs__ProfileFallbackPersist,string,,Y,Y
+(VS) HTTP Profile,vs__ProfileHTTP,string,/Common/http,Y,Y
+(VS) OneConnect Profile,vs__ProfileOneConnect,string,,Y,Y
+(VS) Per Request Profile,vs__ProfilePerRequest,string,,Y,Y
+(VS) Request Logging Profile,vs__ProfileRequestLogging,string,,Y,Y
+(VS) Security DoS Profile,vs__ProfileSecurityDoS,string,,Y,Y
+(VS) Security IP Blacklist Profile,vs__ProfileSecurityIPBlacklist,string,none,Y,Y
+(VS) Security Log Profile,vs__ProfileSecurityLogProfiles,string,,Y,Y
+(VS) Server Protocol Profile,vs__ProfileServerProtocol,string,/Common/tcp-lan-optimized,Y,Y
+(VS) Server SSL Profile,vs__ProfileServerSSL,string,,Y,Y
+(VS) Advanced Routing,vs__RouteAdv,string,disabled,Y,Y
+(VS) SNAT Configuration,vs__SNATConfig,string,automap,Y,N
+(VS) Source Address,vs__SourceAddress,string,0.0.0.0/0,Y,N
+(VS) Virtual Address Advanced Options,vs__VirtualAddrAdvOptions,string,,Y,Y
+(Feature) Easy L4 Firewall Blacklist,feature__easyL4FirewallBlacklist_CIDRRange,string,,Y,Y
+(Feature) Easy L4 Firewall Source List,feature__easyL4FirewallSourceList_CIDRRange,string,0.0.0.0/0,Y,Y
+(L7 Policy) Rules Action: Group,l7policy__rulesAction_Group,string,,Y,Y
+(L7 Policy) Rules Action: Target,l7policy__rulesAction_Target,string,,Y,Y
+(L7 Policy) Rules Action: Parameter,l7policy__rulesAction_Parameter,string,,Y,Y
+(L7 Policy) Rules Match: Group,l7policy__rulesMatch_Group,string,,Y,Y
+(L7 Policy) Rules Match: Operand,l7policy__rulesMatch_Operand,string,,Y,Y
+(L7 Policy) Rules Match: Negate,l7policy__rulesMatch_Negate,string,,Y,Y
+(L7 Policy) Rules Match: Condition,l7policy__rulesMatch_Condition,string,,Y,Y
+(L7 Policy) Rules Match: Value,l7policy__rulesMatch_Value,string,,Y,Y
+(L7 Policy) Rules Match: Case Sensitive,l7policy__rulesMatch_CaseSensitive,string,,Y,Y
+(L7 Policy) Rules Match: Missing,l7policy__rulesMatch_Missing,string,,Y,Y
+(Monitor) Index,monitor__Monitors_Index,integer,0,Y,N
+(Monitor) Name,monitor__Monitors_Name,string,,Y,Y
+(Monitor) Type,monitor__Monitors_Type,string,http,Y,N
+(Monitor) Options,monitor__Monitors_Options,string,,Y,Y
+(Pool) Members Index,pool__Members_Index,integer,0,Y,N
+(Pool) Members IP Address,pool__Members_IPAddress,cliqrtier,,Y,N
+(Pool) Members Port,pool__Members_Port,integer,80,Y,N
+(Pool) Members Connection Limit,pool__Members_ConnectionLimit,integer,0,Y,Y
+(Pool) Members Ratio,pool__Members_Ratio,integer,1,Y,Y
+(Pool) Members Priority Group,pool__Members_PriorityGroup,integer,0,Y,Y
+(Pool) Members State,pool__Members_State,string,enabled,Y,N
+(Pool) Members Advanced Options,pool__Members_AdvOptions,string,,Y,Y
+(Pool) Pools Index,pool__Pools_Index,integer,0,Y,N
+(Pool) Pools Name,pool__Pools_Name,string,,Y,Y
+(Pool) Pools Description,pool__Pools_Description,string,,Y,Y
+(Pool) Pools Load Balancing Method,pool__Pools_LbMethod,string,round-robin,Y,N
+(Pool) Pools Monitor,pool__Pools_Monitor,integer,0,Y,N
+(Pool) Pools Advanced Options,pool__Pools_AdvOptions,string,,Y,Y
+(VS) Bundled Items Resource,vs__BundledItems_Resource,string,,Y,Y
+(VS) Listeners Listener,vs__Listeners_Listener,string,,Y,Y
+(VS) Listeners Destination,vs__Listeners_Destination,string,,Y,Y

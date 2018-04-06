@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: purchases
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: purchases-service
+        target_service: purchases-service
+        targetService: purchases-service
+        app: purchases
+    spec:
+      containers:
+      - name: purchases-svc
+        image: gcr.io/sc-bookstore-demo/purchases:demo
+        ports:
+          - containerPort: 8080
+        env:
+          - name: SVC_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: SVC_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          # User service information from binding.
+          - name: SVC_USERS_HOST
+            value: users
+          - name: SVC_USERS_PORT
+            value: "8080"
+          # Bookstore service information from binding.
+          - name: SVC_BOOKS_HOST
+            value: inventory
+          - name: SVC_BOOKS_PORT
+            value: "8080"

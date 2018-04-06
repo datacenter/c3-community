@@ -1,0 +1,3 @@
+image: gcr.io/sc-bookstore-demo/app
+version: demo
+usePubsub: false

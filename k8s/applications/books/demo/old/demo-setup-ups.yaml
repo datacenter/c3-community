@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: payments
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    app: payments
+  type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: payments
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: payments
+    spec:
+      containers:
+      - name: payments
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80

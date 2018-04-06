@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: booksfe
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: booksfe-service
+        target_service: booksfe-service
+        targetService: booksfe-service
+        app: booksfe
+    spec:
+{{ if .Values.usePubsub }}
+      volumes:
+      - name: google-cloud-key
+        secret:
+          secretName: gcp-iam-credentials
+{{ end }}
+      containers:
+      - name: booksfe-svc
+        image: {{ .Values.image }}:{{ .Values.version | default "latest" }}
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
+{{ if .Values.usePubsub }}
+        volumeMounts:
+        - name: google-cloud-key
+          mountPath: /var/secrets/google
+{{ end }}
+        env:
+          # User service information from binding.
+          - name: SVC_USERS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: booksfe-users
+                key: hostname
+          - name: SVC_USERS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: booksfe-users
+                key: port
+          # Bookstore service information from binding.
+          - name: SVC_BOOKS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: booksfe-inventory
+                key: hostname
+          - name: SVC_BOOKS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: booksfe-inventory
+                key: port
+          # Purchases service information from binding.
+          - name: SVC_PURCHASES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: booksfe-purchases
+                key: hostname
+          - name: SVC_PURCHASES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: booksfe-purchases
+                key: port
+{{ if .Values.usePubsub }}
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /var/secrets/google/serviceAccountPrivateKey
+          - name: PUBSUB_TOPIC
+            valueFrom:
+              secretKeyRef:
+                name: gcp-pubsub-credentials
+                key: topic
+{{ end }}

@@ -1,0 +1,13 @@
+# Binding
+apiVersion: servicecatalog.k8s.io/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: booksfe-pubsub
+name: booksfe-pubsub
+to: pubsub
+spec:
+  instanceRef:
+    name: pubsub
+    namespace: default
+  parameters: {"role":"pubsub.editor"}
+  serviceName: google-pubsub

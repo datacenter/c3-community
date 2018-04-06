@@ -1,0 +1,7 @@
+apiVersion: servicecatalog.k8s.io/v1alpha1
+kind: ServiceBroker
+metadata:
+  name: ups
+name: ups
+spec:
+  URL: http://ups-broker:8000

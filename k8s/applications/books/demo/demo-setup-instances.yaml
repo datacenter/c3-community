@@ -1,0 +1,43 @@
+# USERS
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceInstance
+metadata:
+  name: users
+name: users
+spec:
+  clusterServiceClassExternalName: users
+  clusterServicePlanExternalName: default
+---
+# INVENTORY
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceInstance
+metadata:
+  name: inventory
+name: inventory
+spec:
+  clusterServiceClassExternalName: inventory
+  clusterServicePlanExternalName: default
+---
+# PURCHASES
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceInstance
+metadata:
+  name: purchases
+name: purchases
+spec:
+  clusterServiceClassExternalName: purchases
+  clusterServicePlanExternalName: default
+#---
+# PAYMENTS
+#apiVersion: servicecatalog.k8s.io/v1beta1
+#kind: ServiceInstance
+#metadata:
+#  name: payments
+#name: payments
+#spec:
+#  clusterServiceClassExternalName: user-provided-service
+#  clusterServicePlanExternalName: default
+#  parameters:
+#    credentials:
+#      hostname: payments
+#      port: "80"

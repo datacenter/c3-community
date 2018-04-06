@@ -1,0 +1,12 @@
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: gcp-iam-binding
+spec:
+  instanceRef:
+    name: gcp-iam-instance
+  secretName: gcp-iam-credentials
+    # Secret to store returned data from bind call
+    # Currently:
+    #   serviceAccount: same as passed as parameter
+    #   serviceAccountPrivateKey: the private key of the service account

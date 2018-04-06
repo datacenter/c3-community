@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: booksfe
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: booksfe-service
+        target_service: booksfe-service
+        targetService: booksfe-service
+        app: booksfe
+    spec:
+      volumes:
+      - name: google-cloud-key
+        secret:
+          secretName: gcp-iam-credentials
+      containers:
+      - name: booksfe-svc
+        image: gcr.io/sc-bookstore-demo/app:demo
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
+        volumeMounts:
+        - name: google-cloud-key
+          mountPath: /var/secrets/google
+        env:
+          - name: SVC_USERS_HOST
+            value: users
+          - name: SVC_USERS_PORT
+            value: "8080"
+          - name: SVC_BOOKS_HOST
+            value: inventory
+          - name: SVC_BOOKS_PORT
+            value: "8080"
+          - name: SVC_PURCHASES_HOST
+            value: purchases
+          - name: SVC_PURCHASES_PORT
+            value: "8080"
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /var/secrets/google/serviceAccountPrivateKey
+          - name: PUBSUB_TOPIC
+            valueFrom:
+              secretKeyRef:
+                name: gcp-pubsub-credentials
+                key: topic

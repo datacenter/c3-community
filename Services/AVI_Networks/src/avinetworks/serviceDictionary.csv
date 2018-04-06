@@ -1,0 +1,19 @@
+VS Name,vipName,string,,Y,N
+VS IP,vipIp,string,,Y,N
+VS Port,vipPort,string,,Y,N
+Application Profile,appProfile,string,System-HTTP,Y,N
+SSL Enable,sslEnable,string,,Y,N
+SSL Certificate,sslCert,string,,Y,N
+SSL Key,sslKey,string,,Y,N
+Persistence,persistence,string,,Y,N
+Load Balancing Algorithm,lbMethod,string,least_connections,Y,N
+Pool Server Port,listenPort,string,,Y,N
+Pool Members,poolMembers,cliqrtier,,Y,N
+Health Monitor,poolMonitor,string,,Y,N
+Avi Controller IP,aviControllerIp,string,,Y,N
+Avi Controller User,aviControllerUserName,string,admin,Y,N
+Avi Controller Password,aviPassword,string,,admin,Y,N
+Avi Tenant Name,aviTenantName,string,,admin,Y,N
+Launch User,launchUserId,string,,admin,Y,N
+Avi EcoSystem,aviEcosystem,string,,admin,Y,N
+Auto Allocate Floating IP,auto_allocate_floating_ip,string,,admin,Y,N

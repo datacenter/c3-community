@@ -1,0 +1,97 @@
+#!/bin/bash
+
+
+#For external-service
+. /utils.sh
+
+cmd=$1
+export memberIPs=""
+export dictionaryFileName="serviceDictionary.csv"
+export launchUserId=$launchUserName
+export aviEcosystem=$CloudFamily
+
+# RUN EVERYTHING AS ROOT
+if [ "$(id -u)" != "0" ]; then
+    exec sudo "$0" "$@"
+fi
+
+function getMembers() {
+  for tier in $(echo $CliqrDependencies | tr "," "\n" )
+  do
+    members=CliqrTier_${tier}_IP
+    for ip in $(echo ${!members} | tr "=" "\n" | tr "," "\n")
+    do
+      memberIPs=$memberIPs"[\"$ip\"],"
+    done
+    memberIPs=`echo $memberIPs |sed s'/.$//'`
+    memberIPs="[$memberIPs]"
+  done
+}
+
+function createParamsJSON() {
+paramLine=""
+while IFS=',' read -r displayName paramName paramType defValue varVisible optionalParam
+do
+  if [ "$paramType" == "cliqrtier" ]
+  then
+    paramLine=$paramLine"  \"${paramName}\": ${memberIPs},\n"
+  else
+    if [[ -z "${!paramName}" ]]
+    then
+      paramLine=$paramLine"  \"${paramName}\": \"${defValue}\",\n"
+    else
+      paramLine=$paramLine"  \"${paramName}\": \"${!paramName}\",\n"
+     fi
+   fi
+done < "$dictionaryFileName"
+paramLine=`echo $paramLine |sed s'/...$//'`
+
+echo -e "{\n$paramLine\n}" >> params.json
+}
+
+
+function executionStatus() {
+ FILE="FAILURE"
+ if [ -f $FILE ];
+ then
+    status=`cat $FILE`
+    print_log "Configuration Failed"
+    print_log "$status"
+    exit 127   
+  else
+    FILE="SUCCESS"
+    status="Successfully Configured"
+    print_log "$status"
+ fi
+}
+
+print_log "Retrieving Members.."
+getMembers
+print_log "Setting the params.."
+createParamsJSON
+
+cp /opt/remoteFiles/sslCert/* server.crt
+cp /opt/remoteFiles/sslKey/* server.key
+
+case $cmd in
+	start)
+		print_log "Executing Service.."
+		python avi_install.py start
+		executionStatus
+		;;
+	stop)
+		print_log "Deleting Service.."
+		python avi_install.py stop
+		executionStatus
+		;;
+	update)
+		print_log "Updating Service.."
+		python avi_install.py update
+		executionStatus
+		;;
+	*)
+		serviceStatus="No Valid Script Argument"
+		exit 127
+		;;
+esac
+

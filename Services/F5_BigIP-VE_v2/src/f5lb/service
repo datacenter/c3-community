@@ -1,0 +1,109 @@
+#!/bin/bash
+#For external-service
+. /utils.sh
+
+cmd=$1
+memberIPs=""
+dictionaryFileName="serviceDictionary.csv"
+templateFile="cliqr.template"
+
+# RUN EVERYTHING AS ROOT
+if [ "$(id -u)" != "0" ]; then
+	exec sudo "$0" "$@"
+fi
+
+function setup_prereqs() {
+  yum install -y python-pip wget
+  pip install requests --upgrade
+  pip install jinja2
+}
+
+function getMembers() {
+  for tier in $(echo $CliqrDependencies | tr "," "\n" )
+  do
+    members=CliqrTier_${tier}_IP
+    for ip in $(echo ${!members} | tr "=" "\n" | tr "," "\n")
+    do
+      memberIPs=$memberIPs"[\"$ip\"],"
+    done
+    memberIPs=`echo $memberIPs |sed s'/.$//'`
+  done
+  memberIPs="[$memberIPs]"
+}
+
+function createParamsJSON() {
+paramLine=""
+while IFS=',' read -r displayName paramName paramType defValue varVisible optionalParam
+do
+  if [ "$paramType" == "cliqrtier" ]
+  then
+    paramLine=$paramLine"  \"${paramName}\": ${memberIPs},\n"
+  else
+    if [[ -z "${!paramName}" ]]
+    then
+      paramLine=$paramLine"  \"${paramName}\": \"${defValue}\",\n"
+    else
+      paramLine=$paramLine"  \"${paramName}\": \"${!paramName}\",\n"
+     fi
+   fi
+done < "$dictionaryFileName"
+paramLine=`echo $paramLine |sed s'/...$//'`
+
+echo -e "{\n$paramLine\n}" >> params.json
+}
+
+function executionStatus() {
+ FILE="FAILURE"
+ if [ -f $FILE ];
+ then
+    status=`cat $FILE`
+    print_log "BIG IP Configuration Failed"
+    print_log "$status"
+    exit 127   
+  else
+    FILE="SUCCESS"
+    status="BIG IP Successfully Configured"
+    print_log "$status"
+ fi
+}
+
+print_log "Installing pre requisites.."
+setup_prereqs
+print_log "Retrieving Members.."
+getMembers
+print_log "Setting the params.."
+createParamsJSON
+case $cmd in
+	start)
+		print_log "Executing Service.."
+		output=$(python bigip_rest.py -u $bigIPuser -p $bigIPPassword -c post -t $bigIPAddress -template cliqr.template -var params.json 2>&1)			
+		if [[ $output == *"Error"* ]];
+                then
+                        echo $output >> FAILURE
+                fi
+		executionStatus
+		;;
+	stop)
+		print_log "Deleting Service.."
+		output=$(python bigip_rest.py -u $bigIPuser -p $bigIPPassword -c delete -t $bigIPAddress -template cliqr.template -var params.json 2>&1)			
+		if [[ $output == *"Error"* ]];
+                then
+                        echo $output >> FAILURE
+                fi
+		executionStatus
+		;;
+	update)
+		print_log "Updating Service.."
+		print_log "Adding addition Servers to Application $app_name"
+		output=$(python bigip_rest.py -u $bigIPuser -p $bigIPPassword -c put -t $bigIPAddress -template cliqr.template -var params.json 2>&1)
+	        if [[ $output == *"Error"* ]];
+                then
+                        echo $output >> FAILURE
+                fi
+		executionStatus
+		;;
+	*)
+		serviceStatus="No Valid Script Argument"
+		exit 127
+		;;
+esac

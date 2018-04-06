@@ -1,0 +1,9 @@
+apiVersion: servicecatalog.k8s.io/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: booksfe-purchases
+name: booksfe-purchases
+spec:
+  instanceRef:
+    name: purchases
+    namespace: default
