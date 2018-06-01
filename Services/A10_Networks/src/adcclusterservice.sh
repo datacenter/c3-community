@@ -20,6 +20,7 @@ cluster_id=""
 
 function setup_prereqs() {
   agentSendLogMessage "Installing PreReqs.."
+  mv /etc/yum.repos.d/cliqr.repo /root
   yum install -y docker  wget
   systemctl enable docker
   systemctl start docker

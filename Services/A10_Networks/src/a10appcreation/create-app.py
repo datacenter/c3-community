@@ -47,7 +47,7 @@ def create_app(app_name):
         session_request.add_header(key, value)
 
     response = urllib2.urlopen(session_request,
-            json.dumps({"name": app_name, "state": "ACTIVE","description":"MYAPP","productId":"Pro"}).encode("utf-8"))
+            json.dumps({"name": app_name, "state": "ACTIVE","description":"MYAPP","productId":"LADC-Pro"}).encode("utf-8"))
 
     json_data = json.loads(response.read().decode("utf-8"))
     return json_data["id"]
