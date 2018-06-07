@@ -3,9 +3,10 @@
 # =================================================================================================
 # CE_Cisco_Integration_2_6.py
 # 
-# Version 2017-09-01
+# Version 2018-06-06
 # 
 # By Oren Gev, Aug. 2017
+# Revised June. 2018
 # 
 # This script is a Cloud Center plugin which will utilize the CloudEndure API for the 
 # replication / sync status of a host and launching the target server. (CloudEndure is a server-replication
@@ -50,9 +51,9 @@ requests.packages.urllib3.disable_warnings()
 
 HOST = 'https://console.cloudendure.com'
 
-INSTANCE_TYPE = "c4.4xlarge"
-SUBNET = 'subnet-XXXXXX'
-SG = 'sg-XXXXXX'
+INSTANCE_TYPE = "c4.large"
+SUBNET = 'subnet-xxxxxx'
+SG = 'sg-xxxxxx'
 
 WIN_FOLDER = "c:\\temp"
 LINUX_FOLDER = "/tmp"
@@ -77,7 +78,12 @@ def main():
 	
 	args = parser.parse_args()
 	
-	machine_id, project_id = install_agent(args)
+	installation_token = get_token(args)
+        if installation_token == -1:
+                print "Failed to retrieve project installation token"
+                return -1
+	
+	machine_id, project_id = install_agent(args, installation_token)
 	# Check if we were able to fetch the machine id
 	if machine_id == -1:
 		print "Failed to retrieve machine id"
@@ -89,8 +95,37 @@ def main():
 	# Launch the target instance on the cloud
 	launch_target_machine(args, machine_id, project_id)
 
+
 ###################################################################################################
-def install_agent(args):
+def get_token(args):
+
+# This function fetch the project installation token
+# Usage: get_token(args)
+#       'args' is script user input (args.user, args.password, args.agentname)
+#
+# Returns:      -1 on failure
+
+        print "Fetching the installation token..."
+        session, resp, endpoint = login(args)
+        if session == -1:
+                print "Failed to login"
+                return -1
+
+        project_name = args.project
+
+        projects_resp = session.get(url=HOST+endpoint+'projects')
+        projects = json.loads(projects_resp.content)['items']
+
+        project = [p for p in projects if project_name==p['name']]
+        if not project:
+                print 'Error! No project with name ' + args.project+ ' found'
+                return -1
+
+        return project[0]['agentInstallationToken']
+
+###################################################################################################
+
+def install_agent(args, installation_token):
 
 # This function makes the HTTPS call out to the CloudEndure API and waits for the replication to complete
 # 
@@ -107,11 +142,11 @@ def install_agent(args):
 			os.mkdir(WIN_FOLDER)
 		os.chdir(WIN_FOLDER)
 		fname = 'installer_win.exe'
-		cmd = 'echo | ' +fname + ' -u ' + args.user + ' -p ' + args.password + ' -j ' + args.project + ' --no-prompt'
+		cmd = 'echo | ' +fname + ' -t ' + installation_token + ' --no-prompt'
 	else:
 		os.chdir(LINUX_FOLDER)
 		fname = 'installer_linux.py'
-		cmd = 'sudo python '+ fname+ ' -u ' + args.user + ' -p ' + args.password + ' -j ' + args.project + ' --no-prompt'
+		cmd = 'sudo python ' +fname + ' -t ' + installation_token + ' --no-prompt'
 		
 	url = HOST + '/' + fname
 	request = requests.get(url)
