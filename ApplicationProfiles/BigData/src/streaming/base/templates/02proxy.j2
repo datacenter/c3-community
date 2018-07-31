@@ -1,0 +1,4 @@
+Acquire::http { Proxy "{{ apt_cache_server }}"; };
+Acquire::http::Proxy {
+        download.oracle.com DIRECT;
+};

@@ -1,0 +1,64 @@
+---
+- hosts: all
+  roles:
+    - role: base
+    - role: java
+    - role: hostname
+  vars:
+      volume_mount_point: "/mnt"
+  sudo: yes
+
+- hosts: elasticsearch_master
+  roles:
+    - role: ansible-elasticsearch
+  sudo: yes
+  vars:
+      elasticsearch_node_master: "true"
+      elasticsearch_node_data: "false"
+ 
+- hosts: elasticsearch_data
+  roles:
+    - role: ansible-elasticsearch
+  sudo: yes
+  vars:
+      elasticsearch_node_master: "false"
+      elasticsearch_node_data: "true" 
+
+- hosts: elasticsearch_client
+  roles:
+    - role: ansible-elasticsearch
+  sudo: yes
+  vars:
+      elasticsearch_node_master: "false"
+      elasticsearch_node_data: "false"
+
+- hosts: kibana
+  become: yes
+  become_method: sudo
+  roles:
+    - ansible-kibana
+
+- hosts: zookeeper
+  roles:
+    - role: ansible-zookeeper
+  sudo: yes
+
+- hosts: kafka
+  roles:
+    - role: ansible-kafka
+  sudo: yes
+
+- hosts: storm_nimbus
+  roles:
+    - role: ansible-storm-nimbus
+  sudo: yes
+
+- hosts: storm_supervisor
+  roles:
+    - role: ansible-storm-supervisor
+  sudo: yes
+
+- hosts: storm_nimbus
+  roles:
+    - role: ansible-topologies
+  sudo: yes

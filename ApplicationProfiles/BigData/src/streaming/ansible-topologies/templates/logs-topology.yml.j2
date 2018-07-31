@@ -1,0 +1,84 @@
+#
+# logs_topology.yaml
+#
+# Configuration file for LogsTopology
+#
+topology:
+  name: Logs # Topology Identifier
+  debug: false # Debug option
+  deploy_mode: remote # Deploy mode. Please set 'local' or 'remote'
+  worker_process: 6 # [remote mode only]
+
+  # PLEASE FOLLOW FOLLOWING FORMULA!
+  #
+  # (topology.max_spout_pending * kafka_spout.parallelism) >
+  # (greater than es_logs_bolt.max_logs_in_batch * es_logs_bolt.parallelism)
+  #
+  # Otherwise there is soft deadlock possibility which KafkaSpout could not
+  # read any data from Kafka or ESLogsBolt could not write to ES during
+  # es_logs_bolt.max_seconds_until_flush time.
+  #
+  max_spout_pending: 10000
+
+  # Bellow is specific to LogsTopology
+  enable_stats: {{ enable_stats }}
+
+kafka_spout:
+  id: logKafkaConsumerAnyKey
+  topic: zeus_logs # Kafka topic to be subscribed
+  zk_hosts:
+    {%- for zk_host in zk_hosts %}
+    - {{ zk_host }}:2181
+    {%- endfor %}
+  fetch_size_bytes: 1048576  # 1024 * 1024
+  buffer_size_bytes: 2097152  # 2048 * 1024
+  # The number of workers threads allocated to this job.
+  # This should be equal to the number of kafka partitions
+  parallelism: 6
+
+es_logs_bolt:
+  host: {{ elasticsearch_host }}
+  max_logs_in_batch: 1000
+  max_seconds_until_flush: 2
+  parallelism: 10
+  http_mode: yes # TCP/HTTP
+
+error_bolt:
+  topic: logs_error # Kafka topic to be subscribed
+  kafka_brokers:
+    {%- for kafka_broker in kafka_hosts %}
+    - {{ kafka_broker }}:9092
+    {%- endfor %}
+  parallelism: 1
+
+{% if enable_stats %}
+# This bolt is only activated when 'enable_stats' is true
+kafka_stats_bolt:
+  interval_second: 10
+  influx_host: {{ influx_host }}:8086
+  influx_db_name: kafka_stats
+  parallelism: 1
+
+# This bolt is only activated when 'enable_stats' is true
+es_stats_bolt:
+  interval_second: 10
+  influx_host: {{ influx_host }}:8086
+  influx_db_name: es_stats
+  parallelism: 1
+{% else %}
+## This configuration is not used
+# This bolt is only activated when 'enable_stats' is true
+kafka_stats_bolt:
+  interval_second: 10
+  influx_host: localhost:8086
+  influx_db_name: kafka_stats
+  parallelism: 1
+
+# This bolt is only activated when 'enable_stats' is true
+es_stats_bolt:
+  interval_second: 10
+  influx_host: localhost:8086
+  influx_db_name: es_stats
+  parallelism: 1
+{% endif %}
+

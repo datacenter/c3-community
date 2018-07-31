@@ -1,0 +1,21 @@
+# Trifecta config
+# common properties
+trifecta.common.autoSwitching = true
+trifecta.common.columns = 25
+trifecta.common.debugOn = false
+trifecta.common.encoding = UTF-8
+
+# Kafka/Zookeeper properties
+trifecta.zookeeper.host = localhost:2181
+
+# indicates whether Storm Partition Manager-style consumers should be read from Zookeeper
+trifecta.storm.kafka.consumers.partitionManager = false
+
+
+# Storm properties
+{% if groups['storm_nimbus'] is defined %}
+trifecta.storm.hosts = "{{hostvars[groups['storm_nimbus'][0]]['ansible_ssh_host']}}"
+{% endif %}
+
+trifecta.web.host = {{ trifecta_web_host }}
+trifecta.web.port = {{ trifecta_web_port }}

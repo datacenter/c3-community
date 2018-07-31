@@ -1,0 +1,130 @@
+
+
+# Copyright 2015 Cisco Systems, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+
+- name: Stopping any previous installation of zookeeper
+  supervisorctl: name=zookeeper state=stopped
+  ignore_errors: true
+  tags:
+    - onprem-configuration
+
+- name: Installing zookeeper dependencies
+  apt: pkg={{ item }}
+  with_items:
+    - pkg-config
+    - connect-proxy
+  sudo: yes
+  tags:
+    - onprem-installation
+
+- name: Creating zookeeper group
+  action: group gid={{ zookeeper_gid }} name={{ zookeeper_group }} state=present
+  tags:
+    - onprem-configuration
+
+- name: Creating the zookeeper's user home directory
+  action: file path="/home/{{ zookeeper_user }}" state=directory
+  tags:
+    - onprem-configuration
+
+- name: Creating the zookeeper's user
+  user: uid={{ zookeeper_uid }} name={{ zookeeper_user }} group={{ zookeeper_group }} home="/home/{{ zookeeper_user }}" shell=/bin/bash state=present
+  tags:
+    - onprem-configuration
+
+- name: Downloading zookeeper
+  command: wget {{ zookeeper_mirror }}/zookeeper/zookeeper-{{ zookeeper_version }}/zookeeper-{{ zookeeper_version }}.tar.gz chdir=/tmp creates=/tmp/zookeeper-{{ zookeeper_version }}.tar.gz
+  tags:
+    - onprem-installation
+
+- name: Extracting Zookeeper to /usr/local/etc
+  command: tar -xvzf /tmp/zookeeper-{{ zookeeper_version }}.tar.gz chdir=/usr/local/etc creates=/usr/local/etc/zookeeper-{{ zookeeper_version }}
+  tags:
+    - onprem-installation
+
+- name: Updating permissions
+  file: path=/usr/local/etc/zookeeper-{{ zookeeper_version }} owner={{ zookeeper_user }} group={{ zookeeper_group }} state=directory recurse=yes
+  tags:
+    - onprem-configuration
+
+- name: Linking to the folder
+  file: path=/usr/local/etc/zookeeper src=/usr/local/etc/zookeeper-{{ zookeeper_version }} state=link force=yes
+  tags:
+    - onprem-configuration
+
+- name: Creating the zookeeper data directory
+  file: path={{ zookeeper_data_dir }} owner={{ zookeeper_user }} group={{ zookeeper_group }} mode=0750 state=directory
+  tags:
+    - onprem-configuration
+
+# - name: Create a unique ID
+#   shell: shuf -i 1000-65000 -n 1
+#   register: id
+
+- name: Updating the configuration
+  template: src=zoo.cfg.j2 dest=/usr/local/etc/zookeeper/conf/zoo.cfg owner={{ zookeeper_user }} group={{ zookeeper_group }} mode=0644
+  tags:
+    - onprem-configuration
+
+- name: Updating the myid file
+  template: src=myid.j2 dest={{ zookeeper_data_dir }}/myid owner={{ zookeeper_user }} group={{ zookeeper_group }} mode=0644
+  tags:
+    - onprem-configuration
+
+- name: Creating the supervisord script
+  template: src=zookeeper.conf.j2 dest=/etc/supervisor/conf.d/zookeeper.conf owner=root group=root mode=0644
+  tags:
+    - onprem-configuration
+
+- name: Ensuring supervisord finds it
+  supervisorctl: name=zookeeper state=present
+  tags:
+    - onprem-configuration
+
+- name: Restarting Zookeeper
+  supervisorctl: name=zookeeper state=restarted
+  tags:
+    - onprem-configuration
+
+- name: Downloading Trifecta
+  get_url: url="https://github.com/ldaniels528/trifecta/releases/download/v{{ trifecta_version }}/trifecta_{{ trifecta_version }}.bin.jar" dest=/usr/local/etc/trifecta.bin.jar
+  tags:
+    - onprem-installation
+
+- name: Creating Trifecta config dir
+  file: path={{ ansible_env.HOME }}/.trifecta state=directory
+  tags:
+    - onprem-configuration
+
+- name: Setting Trifecta config
+  template: src=config.properties.j2 dest={{ ansible_env.HOME }}/.trifecta/config.properties
+  tags:
+    - onprem-configuration
+
+- name: Creating Trifecta supervisord script
+  template: src=trifecta.conf.j2 dest=/etc/supervisor/conf.d/trifecta.conf owner=root group=root mode=0644
+  tags:
+    - onprem-configuration
+
+- name: Ensuring supervisord finds it
+  supervisorctl: name=trifecta state=present
+  tags:
+    - onprem-configuration
+
+- name: Restarting Trifecta
+  supervisorctl: name=trifecta state=restarted
+  tags:
+    - onprem-configuration

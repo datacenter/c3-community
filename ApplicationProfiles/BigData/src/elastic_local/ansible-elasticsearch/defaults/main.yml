@@ -1,0 +1,45 @@
+---
+# Elasticsearch Ansible Variables
+
+elasticsearch_user: elasticsearch
+elasticsearch_group: elasticsearch
+elasticsearch_download_url: https://artifacts.elastic.co/downloads/elasticsearch
+elasticsearch_version: 5.6.1
+elasticsearch_apt_dependencies:
+  - htop
+  - unzip
+  - apt-transport-https
+elasticsearch_max_open_files: 65536
+elasticsearch_max_locked_memory: unlimited
+elasticsearch_home_dir: /usr/share/elasticsearch
+elasticsearch_plugin_dir: /usr/share/elasticsearch/plugins
+elasticsearch_log_dir: /var/log/elasticsearch
+elasticsearch_data_dir: /mnt/zeus
+elasticsearch_work_dir: /tmp/elasticsearch
+elasticsearch_conf_dir: /etc/elasticsearch
+elasticsearch_pid_dir: /var/run/elasticsearch
+elasticsearch_systemd_dir: /etc/systemd/system/elasticsearch.service.d/
+elasticsearch_service_startonboot: yes
+elasticsearch_timezone: "Etc/UTC"  # Default to UTC
+
+#elasticsearch_http_cors_enabled: "false"
+elasticsearch_service_state: started
+
+# Non-Elasticsearch Defaults
+apt_cache_valid_time: 300 # seconds between "apt-get update" calls.
+
+#Zeus specific configs
+#elasticsearch_plugins: [x-pack]
+#elasticsearch_plugins:
+#  - { name: 'x-pack', reinstall: true }
+elasticsearch_install_java: "false"
+elasticsearch_cluster_name: "zeus_elasticsearch_cluster"
+elasticsearch_node_master: "true"
+elasticsearch_node_data: "true"
+elasticsearch_network_bind_host: 0.0.0.0
+elasticsearch_index_number_of_shards: 10
+elasticsearch_index_number_of_replicas: 2
+elasticsearch_discovery_zen_ping_multicast_enabled: false
+elasticsearch_indices_memory_index_buffer_size: "20%"
+elasticsearch_threadpool_bulk_queue_size: 1000
+elasticsearch_threadpool_index_queue_size: 1000

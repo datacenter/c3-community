@@ -1,0 +1,50 @@
+
+
+# Copyright 2015 Cisco Systems, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+
+- name: Installing dependencies
+  apt: pkg={{ item }}
+  with_items:
+    - uuid-dev
+  sudo: yes
+  tags:
+    - onprem-installation
+
+- name: Copying ZeroMQ
+  copy: src=zeromq-2.1.7.tar.gz dest=/tmp/zeromq-2.1.7.tar.gz
+  tags:
+    - onprem-installation
+
+- name: Extracting ZeroMQ
+  command: tar -xzf /tmp/zeromq-2.1.7.tar.gz chdir=/tmp creates=/tmp/zeromq-2.1.7
+  tags:
+    - onprem-installation
+
+- name: Configuring ZeroMQ
+  command: ./configure chdir=/tmp/zeromq-2.1.7
+  tags:
+    - onprem-installation
+
+- name: Compiling ZeroMQ
+  command: make chdir=/tmp/zeromq-2.1.7
+  tags:
+    - onprem-installation
+
+- name: Installing ZeroMQ
+  command: make install chdir=/tmp/zeromq-2.1.7
+  sudo: yes
+  tags:
+    - onprem-installation

@@ -1,0 +1,50 @@
+
+
+# Copyright 2015 Cisco Systems, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+#http://ftp.cixug.es/apache/storm/apache-storm-0.9.5/apache-storm-0.9.5.tar.gz
+
+- name: Stopping any previous installation of storm
+  supervisorctl: name=storm state=stopped
+  ignore_errors: yes
+
+- name: Downloading Storm
+  shell: wget -O /tmp/apache-storm-{{ storm_version }}.tar.gz https://archive.apache.org/dist/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz
+
+- name: Extracting to /usr/local/etc
+  command: tar -xvzf /tmp/apache-storm-{{ storm_version }}.tar.gz chdir=/usr/local/etc creates=/usr/local/etc/apache-storm-{{ storm_version }}
+
+- name: Creating the storm user group
+  action: group name={{ storm_group }} state=present
+
+- name: Creating the user directory
+  action: file path="/home/{{ storm_user }}" state=directory
+
+- name: Creating the storm user
+  user: name={{ storm_user }} group={{ storm_group }} home="/home/{{ storm_user }}" shell=/bin/bash state=present
+
+- name: Updating permissions
+  file: path=/usr/local/etc/apache-storm-{{ storm_version }} owner={{ storm_user }} group={{ storm_group }} state=directory recurse=yes
+  sudo: yes
+
+- name: Creating link to folder
+  file: path=/usr/local/etc/storm src=/usr/local/etc/apache-storm-{{ storm_version }} state=link force=yes
+
+- name: Creating the logs dir
+  file: path={{ storm_log_dir }} owner={{ storm_user }} group={{ storm_group }} mode=0750 state=directory
+
+- name: Updating the storm.yaml conf
+  template: src=storm.yaml.j2 dest=/usr/local/etc/storm/conf/storm.yaml owner={{ storm_user }} group={{ storm_group }} mode=0644
+  when: groups['zookeeper'] is defined

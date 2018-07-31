@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+import os
+import sys
+import subprocess
+import jinja2
+from time import sleep
+
+
+# Jinja filled vars
+aws = {{ aws | bool }}
+storm_bin = '{{ storm_local_dir }}/bin/storm'
+topos_jar = '{{ topologies_folder }}/jars/storm_topologies.jar'
+logs_j2 = '{{ topologies_folder }}/confs/logs-topology.yml.j2'
+metrics_j2 = '{{ topologies_folder }}/confs/metrics-topology.yml.j2'
+logs_yml = '{{ topologies_folder }}/confs/logs-topology.yml'
+metrics_yml = '{{ topologies_folder }}/confs/metrics-topology.yml'
+
+# Vars get from env (CloudFormation compatibility)
+vars = {}
+vars['zk_hosts'] = os.environ['ZOOKEEPER_HOSTS'].strip().split('/')
+vars['kafka_hosts'] = os.environ['KAFKA_HOSTS'].strip().split('/')
+topology_name = os.environ['TOPOLOGY_NAME']
+
+def render(tpl_path, file_path, context):
+    path, filename = os.path.split(tpl_path)
+    content  = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(path or './')
+    ).get_template(filename).render(context)
+    with open(file_path, 'w') as f:
+        f.write(content)
+
+# Sleep if specified by environment
+if "SLEEP_SECONDS" in os.environ:
+    sleep(float(os.environ['SLEEP_SECONDS']))
+
+# Construct command
+command = [storm_bin, 'jar', topos_jar]
+# Logs topology
+if topology_name == 'Logs':
+    topology_class = 'io.ciscozeus.topologies.LogsTopology'
+    vars['elasticsearch_host'] = os.environ['ELASTICSEARCH_HOST']
+    if aws: elasticsearch_host += ':80'
+    # Basic command
+    command += [topology_class, logs_yml]
+    # Trace a token
+    if "SRE_INFLUXDB_ADDR" in os.environ:
+        vars['enable_stats'] = True
+        vars['influx_host'] = os.environ['SRE_INFLUXDB_ADDR']
+    else:
+        vars['enable_stats'] = False
+    render(logs_j2, logs_yml, vars)
+# Metrics topology
+elif topology_name == 'Metrics':
+    topology_class='io.ciscozeus.topologies.MetricsTopology'
+    vars['influx_host'] = os.environ['INFLUXDB_HOST']
+    command += [topology_class, metrics_yml]
+    render(metrics_j2, metrics_yml, vars)
+else:
+    sys.stderr.write('Name {} is not in the topology names this script can deploy.'.format(topology_name))
+    exit(1)
+
+# Run the command to deploy the topology
+returncode = subprocess.call(command, stderr=sys.stderr)
+exit(returncode)

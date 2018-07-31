@@ -1,0 +1,137 @@
+
+
+# Copyright 2015 Cisco Systems, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+
+- name: Stopping any previous installation of kafka
+  supervisorctl: name=kafka state=stopped
+  ignore_errors: yes
+  tags:
+    - onprem-configuration
+
+- name: Creating the kafkauser group
+  action: group gid={{ kafka_gid }} name={{ kafka_group }} state=present
+  tags:
+    - onprem-configuration
+
+- name: Creating the user directory
+  action: file path="/home/{{ kafka_user }}" state=directory
+  tags:
+    - onprem-configuration
+
+- name: Creating the kafka user
+  user: uid={{ kafka_uid }} name={{ kafka_user }} group={{ kafka_group }} home="/home/{{ kafka_user }}" shell=/bin/bash state=present
+  tags:
+    - onprem-configuration
+ 
+- name: Downloading Kafka
+  get_url: url=https://www.us.apache.org/dist/kafka/{{ kafka_version }}/kafka_{{ scala_version }}-{{ kafka_version }}.tgz dest=/tmp/kafka_{{ scala_version }}-{{ kafka_version }}.tgz validate_certs=False
+  tags:
+    - onprem-installation
+
+- name: Extracting to /usr/local/etc
+  command: tar -xvzf /tmp/kafka_{{ scala_version }}-{{ kafka_version }}.tgz chdir=/usr/local/etc creates=/usr/local/etc/kafka_{{ scala_version }}-{{ kafka_version }}
+  tags:
+    - onprem-installation
+
+- name: Updating permissions
+  sudo: yes
+  file: path=/usr/local/etc/kafka_{{ scala_version }}-{{ kafka_version }} owner={{ kafka_user }} group={{ kafka_group }} state=directory recurse=yes
+  tags:
+    - onprem-configuration
+
+- name: Creating link to folder
+  file: path=/usr/local/etc/kafka src=/usr/local/etc/kafka_{{ scala_version }}-{{ kafka_version }} state=link force=yes
+  tags:
+    - onprem-configuration
+
+- name: Creating the logs dir
+  file: path={{ kafka_logs_dir }} owner={{ kafka_user }} group={{ kafka_group }} mode=0750 state=directory
+  tags:
+    - onprem-configuration
+
+- name: Creating supervisord's script
+  template: src=kafka.conf.j2 dest=/etc/supervisor/conf.d/kafka.conf owner=root group=root mode=0644
+  tags:
+    - onprem-configuration
+
+- name: Ensuring supervisord finds Kafka
+  supervisorctl: name=kafka state=present
+  tags:
+    - onprem-configuration
+
+- name: Updating the server.properties conf
+  template: src=server.properties.j2 dest=/usr/local/etc/kafka/config/server.properties owner={{ kafka_user }} group={{ kafka_group }} mode=0644
+  tags:
+    - onprem-configuration
+
+- name: Restarting Kafka
+  supervisorctl: name=kafka state=restarted
+  tags:
+    - onprem-configuration
+
+- name: Copying util scripts
+  action: file path="/surge/util-scripts" state=directory
+  tags:
+    - onprem-configuration
+
+- name: Copying zeus-topic creation script
+  template: src=create-zeus-topic.sh.j2 dest=/surge/util-scripts/create-zeus-topic.sh owner={{ kafka_user }} group={{ kafka_group }} mode=0777
+  tags:
+    - onprem-configuration
+
+- name: Creating zeus-topics
+  shell: /surge/util-scripts/create-zeus-topic.sh
+  when: inventory_hostname == groups['kafka'][0]
+  # the first node will create zeus-required topics for the cluster
+  register: create_result
+  tags:
+    - onprem-configuration
+
+- debug: var=create_result.stdout_lines
+  when: inventory_hostname == groups['kafka'][0]
+  tags:
+    - onprem-configuration
+
+- name: Copying test scripts
+  action: file path="/surge/test-scripts" state=directory
+  tags:
+    - onprem-configuration
+
+- name: Copying test scripts 2
+  template: src=test-consumer.sh.j2 dest=/surge/test-scripts/test-consumer.sh owner={{ kafka_user }} group={{ kafka_group }} mode=0777
+  tags:
+    - onprem-configuration
+
+- name: Copying test scripts 3
+  template: src=test-topic.sh.j2 dest=/surge/test-scripts/test-topic.sh owner={{ kafka_user }} group={{ kafka_group }} mode=0777
+  tags:
+    - onprem-configuration
+
+- name: Copying test scripts 4
+  template: src=test-producer.sh.j2 dest=/surge/test-scripts/test-producer.sh owner={{ kafka_user }} group={{ kafka_group }} mode=0777
+  tags:
+    - onprem-configuration
+
+- name: Copying test scripts 5
+  template: src=test-sampledata.sh.j2 dest=/surge/test-scripts/test-sampledata.sh owner={{ kafka_user }} group={{ kafka_group }} mode=0777
+  tags:
+    - onprem-configuration
+
+- name: Send sample data
+  shell: /surge/test-scripts/test-sampledata.sh
+  when: inventory_hostname == groups['kafka'][0]
+  tags:
+    - onprem-configuration

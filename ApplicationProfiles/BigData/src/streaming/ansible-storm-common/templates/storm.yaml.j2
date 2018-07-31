@@ -1,0 +1,51 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+
+storm.local.dir: {{ storm_local_dir if storm_local_dir != None else "/usr/local/etc/storm" }}
+
+
+storm.zookeeper.servers:
+{% for host in groups['zookeeper'] %}
+    - "{{ hostvars[host]['ansible_ssh_host'] }}"
+{% endfor %}
+
+nimbus.host: "{{hostvars[groups['storm_nimbus'][0]]['ansible_ssh_host']}}"
+
+nimbus.childopts: {{ nimbus_childopts if nimbus_childopts != None else "-Xmx1024m -Djava.net.preferIPv4Stack=true" }}
+
+ui.childopts: {{ ui_childopts if ui_childopts != None else "-Xmx768m -Djava.net.preferIPv4Stack=true" }}
+
+supervisor.childopts: {{ supervisor_childopts if supervisor_childopts != None else "-Djava.net.preferIPv4Stack=true" }}
+
+worker.childopts: {{ worker_childopts if worker_childopts != None else "-Xmx768m -Djava.net.preferIPv4Stack=true" }}
+
+{% set storm_worker_slots = (storm_worker_total_slots_needed / (groups['storm_supervisor'] | length)) | round(0,'ceil') | int %}
+{% if storm_worker_slots < storm_worker_minimum_slots_per_node %}
+{% set storm_worker_slots = storm_worker_minimum_slots_per_node %}
+{% endif %}
+supervisor.slots.ports:
+{% for i in range(storm_worker_slots) %}
+  - {{ 6700 + i }}
+{% endfor %}
+
+{% if alerts_deploy is defined and alerts_deploy %}
+drpc.servers:
+{% for host in groups['storm_nimbus'] %}
+    - {{ hostvars[host]['ansible_ssh_host'] }}
+{% endfor %}
+{% endif %}

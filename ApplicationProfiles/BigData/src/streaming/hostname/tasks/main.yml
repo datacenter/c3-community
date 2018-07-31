@@ -1,0 +1,16 @@
+# file: hostname/tasks/main.yml
+- name: Hostname | Update the hostname (pt. 1) - hostname cmd
+  hostname:
+    name: "{{inventory_hostname}}"
+  tags:
+    - onprem-configuration
+
+- name: Hostname | Update the hostname (pt. 2) - (/etc/hostname)
+  copy:
+    content: "{{inventory_hostname}}{{'\n'}}"
+    dest: /etc/hostname
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - onprem-configuration

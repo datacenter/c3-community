@@ -1,0 +1,79 @@
+# Copyright 2015 Cisco Systems, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+
+- name: Installing dependencies
+  apt: pkg=libtool state=present
+  tags:
+    - onprem-installation
+
+- name: Cloning JZMQ
+  git: repo=https://github.com/nathanmarz/jzmq dest=/tmp/jzmq
+  tags:
+    - onprem-installation
+
+- name: Adding symlink (workaround)
+  file:
+    dest: /usr/bin/libtool
+    src: /usr/bin/libtoolize
+    state: link
+    force: true
+  tags:
+    - onprem-installation
+
+- name: Autogenerating JZMQ
+  command: ./autogen.sh chdir=/tmp/jzmq
+  tags:
+    - onprem-installation
+
+- name: Creating classdist_noinst.stamp (because of known bug)
+  command: touch /tmp/jzmq/src/classdist_noinst.stamp
+  tags:
+    - onprem-installation
+
+- name: Redefining class path (because of known bug)
+  shell: CLASSPATH=.:./.:$CLASSPATH javac -d . org/zeromq/ZMQ.java org/zeromq/ZMQException.java org/zeromq/ZMQQueue.java org/zeromq/ZMQForwarder.java org/zeromq/ZMQStreamer.java chdir=/tmp/jzmq/src
+  tags:
+    - onprem-installation
+
+- name: Autogenerating JZMQ again (because of known bug)
+  command: ./autogen.sh chdir=/tmp/jzmq
+  tags:
+    - onprem-installation
+
+- name: Configuring JZMQ
+  command: ./configure chdir=/tmp/jzmq
+  environment:
+      JAVA_HOME: "/usr/lib/jvm/java-8-oracle"
+  when: java_version is not defined
+  tags:
+    - onprem-installation
+
+- name: Configuring JZMQ
+  command: ./configure chdir=/tmp/jzmq
+  environment:
+      JAVA_HOME: "/usr/lib/jvm/java-{{ java_version }}-oracle"
+  when: java_version is defined
+  tags:
+    - onprem-installation
+
+- name: Compiling JZMQ
+  command: sudo make chdir=/tmp/jzmq
+  tags:
+    - onprem-installation
+
+- name: Installing JZMQ
+  command: make install chdir=/tmp/jzmq
+  tags:
+    - onprem-installation

@@ -1,0 +1,38 @@
+# Copyright 2016 Cisco Systems, Inc_
+#
+# Licensed under the Apache License, Version 2_0 (the "License"); you may
+# not use this file except in compliance with the License_ You may obtain
+# a copy of the License at
+#
+#      http://www_apache_org/licenses/LICENSE-2_0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied_ See the
+# License for the specific language governing permissions and limitations
+# under the License_
+
+- name: Get jar ID on github
+  shell: curl -L https://api.github.com/repos/CiscoZeus/zeus_alerts/releases/tags/{{ alerts_version }}?access_token={{ github_token }} | python -c 'import sys, json; print json.load(sys.stdin)["assets"][0]["id"]'
+  register: asset_id
+  args:
+   creates: "{{ topologies_folder }}/jars/zeus_alerts.jar" #Like this it will not be executed if the jar is already downloaded (useful for offline)
+  tags:
+    - onprem-installation
+
+- name: Download alerts jar
+  shell: wget --header='Accept:application/octet-stream' -O {{ topologies_folder }}/jars/zeus_alerts.jar "https://api.github.com/repos/CiscoZeus/zeus_alerts/releases/assets/{{asset_id.stdout}}?access_token={{github_token}}"
+  args:
+   creates: "{{ topologies_folder }}/jars/zeus_alerts.jar"
+  tags:
+    - onprem-installation
+
+- name: Submitting Log Alerts topology
+  shell: "{{ storm_local_dir }}/bin/storm jar {{ topologies_folder }}/jars/zeus_alerts.jar {{ alerts_logs_class_name }} LogsAlerts \"{% for host in groups['zookeeper'] %}{{ hostvars[host]['ansible_ssh_host'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}\" {{ hostvars[groups['pg-master'][0]]['ansible_ssh_host']  }} {{ hostvars[groups['zeus-notification'][0]]['ansible_ssh_host'] }}"
+  tags:
+    - onprem-configuration
+
+- name: Submitting Metrics Alerts topology
+  shell: "{{ storm_local_dir }}/bin/storm jar {{ topologies_folder }}/jars/zeus_alerts.jar {{ alerts_metrics_class_name }} MetricsAlerts \"{% for host in groups['zookeeper'] %}{{ hostvars[host]['ansible_ssh_host'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}\" {{ hostvars[groups['pg-master'][0]]['ansible_ssh_host']  }} {{ hostvars[groups['zeus-notification'][0]]['ansible_ssh_host'] }}"
+  tags:
+    - onprem-configuration

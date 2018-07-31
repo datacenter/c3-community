@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Copyright 2016 Cisco Systems, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+{% set kafka_host_count = groups['kafka']|length %}
+{% if num_replication_factor is not defined %}
+	{% if kafka_host_count == 1 %}
+		{% set num_replication_factor = 1 %}
+	{% else %}
+		{% set num_replication_factor = 2 %}
+	{% endif %}
+{% endif %}
+
+#Creating zeus required topics 
+
+{% if groups['zookeeper'] is defined %}
+
+echo "Creating zeus topics"
+
+{% for topic in zeus_topics %}
+/usr/local/etc/kafka/bin/kafka-topics.sh --create --zookeeper {% for host in groups['zookeeper'] -%} {{ hostvars[host]['ansible_ssh_host'] }}:2181,
+{%- endfor %} --replication-factor {{ num_replication_factor }} --partitions {{ num_partitions }} --topic {{ topic }}
+{% endfor %}
+
+echo ">>>>>>>>>>>>>>>>>>>>"
+echo "If you see the [topic already exists] exception above, it means current zeus already have required topics. So the topic creation will be skipped. You can ignore this exception."
+echo "<<<<<<<<<<<<<<<<<<<<"
+
+echo "Please check that the topic is replicated the correct amount of times"
+
+{% for topic in zeus_topics %}
+/usr/local/etc/kafka/bin/kafka-topics.sh --describe --zookeeper {% for host in groups['zookeeper'] -%} {{ hostvars[host]['ansible_ssh_host'] }}:2181,
+{%- endfor %} --topic {{ topic }}
+{% endfor %}
+
+{% else %}
+
+echo "Creating zeus topics"
+
+{% for topic in zeus_topics %}
+/usr/local/etc/kafka/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor {{ num_replication_factor }} --partitions {{ num_partitions }} --topic {{ topic }}
+{% endfor %}
+
+echo "Please check that the topic is replicated the correct amount of times"
+
+echo "================"
+echo "If you see the [topic already exists] exception, it means current zeus already have required topics. So the topic creation will be skipped. You can ignore this exception."
+echo "================"
+
+{% for topic in zeus_topics %}
+/usr/local/etc/kafka/bin/kafka-topics.sh --describe --zookeeper localhost:2181 --topic {{ topic }}
+{% endfor %}
+
+{% endif %}

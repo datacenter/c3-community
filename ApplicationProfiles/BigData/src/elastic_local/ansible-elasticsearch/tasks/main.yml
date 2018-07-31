@@ -1,0 +1,15 @@
+---
+# Elasticsearch Ansible Tasks
+
+# Configure timezome
+- include: timezone.yml
+
+# Install and configure elasticsearch
+- include: elastic-install.yml
+
+# Install Other Generic Plugins
+- include: plugins.yml
+  when: (elasticsearch_plugins is defined)
+
+# Always run post-run tasks
+- include: post-run.yml

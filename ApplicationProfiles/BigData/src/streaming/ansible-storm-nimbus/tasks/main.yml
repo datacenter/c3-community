@@ -1,0 +1,64 @@
+
+
+# Copyright 2015 Cisco Systems, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+
+- name: Creating supervisord's script
+  template: src=storm-nimbus.conf.j2 dest=/etc/supervisor/conf.d/storm-nimbus.conf owner=root group=root mode=0644
+  tags:
+    - onprem-configuration
+
+- name: Ensuring supervisord finds it
+  supervisorctl: name=storm-nimbus state=present
+  tags:
+    - onprem-configuration
+
+- name: Restarting Storm-nimbus
+  supervisorctl: name=storm-nimbus state=restarted
+  tags:
+    - onprem-configuration
+
+- name: Creating supervisord's script
+  template: src=storm-ui.conf.j2 dest=/etc/supervisor/conf.d/storm-ui.conf owner=root group=root mode=0644
+  tags:
+    - onprem-configuration
+
+- name: Ensuring supervisord finds it
+  supervisorctl: name=storm-ui state=present
+  tags:
+    - onprem-configuration
+
+- name: Restarting Storm-ui
+  supervisorctl: name=storm-ui state=restarted
+  tags:
+    - onprem-configuration
+
+- name: Creating supervisord's script for drpc
+  template: src=storm-drpc.conf.j2 dest=/etc/supervisor/conf.d/storm-drpc.conf owner=root group=root mode=0644
+  when: alerts_deploy is defined and alerts_deploy #Only necessary if we are deploying alerts
+  tags:
+    - onprem-configuration
+
+- name: Ensuring supervisord finds drpc
+  supervisorctl: name=storm-drpc state=present
+  when: alerts_deploy is defined and alerts_deploy
+  tags:
+    - onprem-configuration
+    
+- name: Restarting Storm-drpc
+  supervisorctl: name=storm-drpc state=restarted
+  when: alerts_deploy is defined and alerts_deploy
+  tags:
+    - onprem-configuration

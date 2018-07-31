@@ -1,0 +1,79 @@
+- name: Adding apt-cache-ng to reduce package installation time
+  template: src=02proxy.j2 dest=/etc/apt/apt.conf.d/02proxy
+  when: apt_cache_server is defined
+  tags:
+    - onprem-installation
+
+- name: Installing common packages
+  apt: pkg={{ item }} update_cache=yes
+  with_items:
+    - automake
+    - autoconf
+    - build-essential
+    - git
+    - python
+    - python-setuptools
+    - supervisor
+    - pkg-config
+  tags:
+    - onprem-installation
+
+- name: Installing pip
+  shell: easy_install pip
+  tags:
+    - onprem-installation
+
+- name: "Build hosts file"
+  template: src=hosts.j2 dest=/etc/hosts
+  tags:
+    - onprem-configuration
+
+- name: Adding warning message after SSH login
+  template: src=motd.j2 dest=/etc/motd
+  tags:
+    - onprem-installation
+
+- name: Creating /mnt/zeus directory for consistency
+  file: path=/mnt/zeus state=directory recurse=yes mode=777
+  tags:
+    - onprem-installation
+
+- include: mountvolume.yml
+  when: volume_mount_point is defined
+  tags:
+    - onprem-configuration
+
+- name: Applying correct folder permissions and ensuring the directory exists even if there is no volume mounted
+  file: path=/mnt/zeus state=directory recurse=yes mode=777
+  tags:
+    - onprem-configuration
+
+- name: Increasing fd limits
+  template: src=limits.conf.j2 dest=/etc/security/limits.conf
+  tags:
+    - onprem-configuration
+
+- name: Adding limits during login
+  lineinfile: dest=/etc/pam.d/login line="session required pam_limits.so"
+  tags:
+    - onprem-configuration
+
+- name: Adding limits for common sessions
+  lineinfile: dest=/etc/pam.d/common-session line="session required pam_limits.so"
+  tags:
+    - onprem-configuration
+
+- name: Adding limits for common noninteractive sessions
+  lineinfile: dest=/etc/pam.d/common-session-noninteractive line="session required pam_limits.so"
+  tags:
+    - onprem-configuration
+
+- name: Adding fd limits to Supervisor conf file
+  template: src=supervisord.conf.j2 dest=/etc/supervisor/supervisord.conf
+  tags:
+    - onprem-configuration
+
+- name: Restart Supervisor
+  service: name=supervisor state=restarted sleep=5
+  tags:
+    - onprem-configuration
